@@ -96,7 +96,12 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(app, /SIK KULLANILANLAR/);
   assert.match(app, /navbea:pinned-tabs/);
   assert.match(app, /className="tab-pin"/);
+  assert.match(app, /MAX_WORKSPACE_TABS/);
+  assert.match(app, /!pinnedTabIds\.includes\(candidate\)/);
+  assert.match(app, /setTabs\(\(current\) => \["home", \.\.\.validPins/);
   assert.doesNotMatch(app, /Sabitlenenler/);
+  assert.match(app, /className="filter-dropdown"/);
+  assert.match(css, /\.filter-popover/);
   assert.equal(packageJson.dependencies.recharts.startsWith("^"), true);
   assert.match(app, /getTableModel/);
   assert.match(css, /\.nav-flyout/);

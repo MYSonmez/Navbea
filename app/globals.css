@@ -279,6 +279,17 @@ kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-rad
 .section-header h1 { margin: 0; font-size: clamp(24px, 2vw, 32px); line-height: 1.18; letter-spacing: -.7px; }
 .section-description { margin: 8px 0 0; color: var(--text-soft); font-size: 13px; line-height: 1.55; max-width: 700px; }
 .header-actions, .table-actions { display: flex; gap: 8px; align-items: center; }
+.filter-dropdown { position: relative; flex: 0 0 auto; }
+.filter-popover { position: absolute; top: calc(100% + 9px); right: 0; z-index: 28; width: min(380px, calc(100vw - 32px)); padding: 0; overflow: hidden; box-shadow: 0 22px 60px rgba(20,27,42,.18); }
+.filter-popover-head { min-height: 58px; padding: 11px 12px 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.filter-popover-head .eyebrow { margin-bottom: 3px; }
+.filter-popover-head h2 { margin: 0; font-size: 15px; }
+.filter-fields { padding: 14px 15px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.filter-fields label { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.filter-fields label span { color: var(--text-soft); font-size: 9px; font-weight: 720; }
+.filter-fields select { width: 100%; }
+.filter-popover-footer { padding: 10px 15px 14px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+.filter-popover-footer .primary-button, .filter-popover-footer .text-button { min-height: 36px; }
 .primary-button, .secondary-button, .text-button { border: 0; border-radius: 9px; min-height: 40px; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; font-weight: 680; cursor: pointer; white-space: nowrap; }
 .primary-button { background: var(--blue); color: #fff; box-shadow: 0 5px 14px rgba(37,99,235,.18); }
 .primary-button:hover { filter: brightness(1.05); transform: translateY(-1px); }
@@ -687,6 +698,11 @@ select, .inspector input { height: 36px; border: 1px solid var(--line); border-r
 @media (max-width: 760px) {
   .compact-chart-card { grid-template-columns: 1fr; gap: 14px; }
   .asset-overview { grid-template-columns: repeat(9, 124px); }
+  .filter-popover { right: -8px; }
+}
+
+@media (max-width: 470px) {
+  .filter-fields { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 470px) {

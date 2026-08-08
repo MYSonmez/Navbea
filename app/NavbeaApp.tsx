@@ -391,6 +391,7 @@ function findNodePath(nodes: SidebarNode[], nodeId: string, path: string[] = [])
 
 const INITIAL_RECENT_IDS = ["live", "personnels", "shell-dispenser", "alarms-management", "time-matching", "report-heatmap"];
 const FREQUENT_IDS = ["live", "active-tasks", "personnels", "shell-dispenser", "alarm-dashboard", "report-personnels"];
+const MAX_WORKSPACE_TABS = 7;
 
 const WORK_ITEMS = [
   { level: "critical", title: "C Blok sıcaklık eşiği aşıldı", meta: "HVAC-3 • 2. Kat • 2 dk önce", tag: "Kritik", icon: ThermometerSun },
@@ -701,16 +702,33 @@ const DASHBOARD_TRENDS = {
   ],
 };
 
-function OperationalFilters({ kind = "general" }: { kind?: "home" | "shell" | "tool" | "general" | "report" }) {
+function FilterDropdown({ kind = "general" }: { kind?: "home" | "shell" | "tool" | "general" | "report" }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const filterFormRef = useRef<HTMLFormElement>(null);
   const thirdLabel = kind === "shell" ? "Alan" : kind === "tool" ? "Ekipman" : kind === "report" ? "Durum" : "Bölge";
   const thirdOptions = kind === "shell" ? ["Tüm alanlar", "A Blok", "B Blok"] : kind === "tool" ? ["Tüm ekipmanlar", "El aletleri", "Araçlar"] : kind === "report" ? ["Tüm durumlar", "Aktif", "Dikkat"] : ["Tüm bölgeler", "A Blok", "B Blok"];
-  return <section className="panel filter-bar operational-filter-bar" aria-label="Görünüm filtreleri">
-    <label><span>Konum</span><select><option>Merkez Kampüs</option><option>Ana Bina</option><option>Depo</option></select></label>
-    <label><span>Kat</span><select><option>Tüm katlar</option><option>Zemin</option><option>1. Kat</option><option>2. Kat</option></select></label>
-    <label><span>{thirdLabel}</span><select>{thirdOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-    {kind === "tool" || kind === "report" ? <label><span>Tarih</span><select><option>Son 7 gün</option><option>Son 30 gün</option><option>Bu yıl</option></select></label> : null}
-    <button className="primary-button"><Filter size={16} /> Uygula</button>
-  </section>;
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutside);
+    return () => document.removeEventListener("pointerdown", closeOnOutside);
+  }, [open]);
+  return <div className="filter-dropdown" ref={dropdownRef}>
+    <button className="secondary-button" aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((value) => !value)}><Filter size={16} /> Filtrele <ChevronDown size={14} /></button>
+    {open ? <section className="panel filter-popover" role="dialog" aria-label="Görünüm filtreleri">
+      <div className="filter-popover-head"><div><p className="eyebrow">GÖRÜNÜM</p><h2>Filtreler</h2></div><IconButton label="Filtreleri kapat" onClick={() => setOpen(false)}><X size={15} /></IconButton></div>
+      <form ref={filterFormRef} onSubmit={(event) => { event.preventDefault(); setOpen(false); }}><div className="filter-fields">
+        <label><span>Konum</span><select><option>Merkez Kampüs</option><option>Ana Bina</option><option>Depo</option></select></label>
+        <label><span>Kat</span><select><option>Tüm katlar</option><option>Zemin</option><option>1. Kat</option><option>2. Kat</option></select></label>
+        <label><span>{thirdLabel}</span><select>{thirdOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+        {kind === "tool" || kind === "report" ? <label><span>Tarih</span><select><option>Son 7 gün</option><option>Son 30 gün</option><option>Bu yıl</option></select></label> : null}
+      </div>
+      <div className="filter-popover-footer"><button type="button" className="text-button" onClick={() => filterFormRef.current?.reset()}>Temizle</button><button type="submit" className="primary-button"><Filter size={15} /> Uygula</button></div></form>
+    </section> : null}
+  </div>;
 }
 
 function DashboardTrendChart({ variant }: { variant: "shell" | "tool" | "alarm" | "general" }) {
@@ -766,8 +784,7 @@ function MiniMap({ emergency = false }: { emergency?: boolean }) {
 
 function HomeView({ openService, openCatalog, recentIds }: { openService: (id: string) => void; openCatalog: (group?: string) => void; recentIds: string[] }) {
   return <div className="view-stack">
-    <SectionHeader eyebrow={`${WORKSPACE_NAME.toUpperCase()} · 8 AĞUSTOS 2026, CUMARTESİ`} title="Operasyon Merkezi" description="Son güncelleme 15:42" actions={<><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button" onClick={() => openService("active-tasks")}><Plus size={17} /> Yeni görev</button></>} />
-    <OperationalFilters kind="home" />
+    <SectionHeader eyebrow={`${WORKSPACE_NAME.toUpperCase()} · 8 AĞUSTOS 2026, CUMARTESİ`} title="Operasyon Merkezi" description="Son güncelleme 15:42" actions={<><FilterDropdown kind="home" /><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button" onClick={() => openService("active-tasks")}><Plus size={17} /> Yeni görev</button></>} />
     <section className="asset-overview" aria-label="Canlı varlık özeti">{HOME_ASSET_SUMMARY.map(({ label, value, icon: AssetIcon, tone, serviceId }) => <button key={label} onClick={() => openService(serviceId)}><span className={`metric-icon ${tone}`}><AssetIcon size={18} /></span><span><small>{label}</small><strong>{value}</strong></span><ChevronRight size={14} /></button>)}</section>
 
     <div className="home-grid">
@@ -799,7 +816,7 @@ function CatalogView({ activeGroup, setActiveGroup, openService }: { activeGroup
 function LiveView({ emergency = false }: { emergency?: boolean }) {
   const [activeFilter, setActiveFilter] = useState("Tümü");
   const [selectedArea, setSelectedArea] = useState("A Blok");
-  return <div className="view-stack"><SectionHeader eyebrow={`${emergency ? "GÜVENLİK" : "CANLI İZLEME"} · ${WORKSPACE_NAME.toUpperCase()}`} title={emergency ? "Toplanma Durumu" : "Saha Haritası"} description="Son veri 15:42:18" actions={<><StatusPill tone={emergency ? "danger" : "success"}>{emergency ? "Acil durum" : "Canlı"}</StatusPill><button className="secondary-button"><Filter size={16} /> Filtrele</button></>} />
+  return <div className="view-stack"><SectionHeader eyebrow={`${emergency ? "GÜVENLİK" : "CANLI İZLEME"} · ${WORKSPACE_NAME.toUpperCase()}`} title={emergency ? "Toplanma Durumu" : "Saha Haritası"} description="Son veri 15:42:18" actions={<><StatusPill tone={emergency ? "danger" : "success"}>{emergency ? "Acil durum" : "Canlı"}</StatusPill><FilterDropdown kind="general" /></>} />
     <div className="live-layout"><section className="panel live-map-card"><div className="map-filters">{[["Tümü", "2.391"], ["Personel", "2.084"], ["Ekipman", "296"], ["Misafir", "11"]].map(([label, count]) => <button key={label} className={`filter-chip ${activeFilter === label ? "active" : ""}`} onClick={() => setActiveFilter(label)}>{label} <span>{count}</span></button>)}</div><MiniMap emergency={emergency} /></section>
       <aside className="panel live-side"><div className="panel-heading"><div><p className="eyebrow">{emergency ? "TOPLANMA BÖLGELERİ" : "VARLIKLAR"}</p><h2>{emergency ? "Bölge durumu" : "Yakındaki hareketler"}</h2></div><IconButton label="Seçenekler"><MoreHorizontal size={18} /></IconButton></div><div className="side-list">{[["A Blok", "42 kişi", "Güvende"], ["B Blok", "28 kişi", "Güvende"], ["C Blok", "17 kişi", emergency ? "3 kişi eksik" : "1 alarm"], ["D Blok", "22 kişi", "Kontrol edildi"]].map(([name, count, state], i) => <button key={name} className={`side-row ${selectedArea === name ? "selected" : ""}`} aria-pressed={selectedArea === name} onClick={() => setSelectedArea(name)}><span className={`site-dot site-${i}`} /><span><strong>{name}</strong><small>{count}</small></span><em className={state.includes("eksik") || state.includes("alarm") ? "danger-text" : ""}>{state}</em></button>)}</div><button className="primary-button full">{emergency ? "Yoklama raporu oluştur" : `${selectedArea} alanını incele`}</button></aside>
     </div>
@@ -812,10 +829,9 @@ function DashboardView({ service }: { service: Service }) {
   const alarm = service.id === "alarm-dashboard";
   const tool = service.id === "tool-tracking";
   const breakdown = shell ? [{ label: "Dolu", value: 154, tone: "teal" }, { label: "Orta", value: 86, tone: "amber" }, { label: "Düşük", value: 28, tone: "coral" }] : alarm ? [{ label: "Acil durum", value: 18, tone: "coral" }, { label: "Hareketsizlik", value: 11, tone: "amber" }, { label: "Geçiş", value: 7, tone: "violet" }] : tool ? [{ label: "Kullanımda", value: 148, tone: "blue" }, { label: "Hazır", value: 96, tone: "teal" }, { label: "Bakım", value: 22, tone: "amber" }] : [{ label: "A Blok", value: 84, tone: "blue" }, { label: "B Blok", value: 71, tone: "teal" }, { label: "C Blok", value: 58, tone: "violet" }];
-  if (service.id === "shell-dashboard") return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<button className="primary-button"><Plus size={16} /> Bileşen ekle</button>} /><OperationalFilters kind="general" /><section className="panel dashboard-empty"><span className="metric-icon violet"><LayoutDashboard size={24} /></span><h2>Henüz veri bileşeni yok</h2><p>Bu panoya gösterge, grafik veya tablo ekleyin.</p><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></section></div>;
+  if (service.id === "shell-dashboard") return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<><FilterDropdown kind="general" /><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></>} /><section className="panel dashboard-empty"><span className="metric-icon violet"><LayoutDashboard size={24} /></span><h2>Henüz veri bileşeni yok</h2><p>Bu panoya gösterge, grafik veya tablo ekleyin.</p><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></section></div>;
   const trendVariant = shell ? "shell" : tool ? "tool" : alarm ? "alarm" : "general";
-  return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></>} />
-    <OperationalFilters kind={shell ? "shell" : tool ? "tool" : "general"} />
+  return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<><FilterDropdown kind={shell ? "shell" : tool ? "tool" : "general"} /><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></>} />
     <section className="metric-grid">{metrics.map((metric) => { const MetricIcon = metric.icon; return <article className="metric-card" key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={20} /></span><div><small>{metric.label}</small><strong>{metric.value}</strong><span className="trend">{metric.detail}</span></div></article>; })}</section>
     <div className="dashboard-grid"><section className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">SON 7 GÜN</p><h2>{shell ? "Doluluk değişimi" : alarm ? "Alarm yoğunluğu" : tool ? "Ekipman kullanımı" : "Operasyon trendi"}</h2></div><StatusPill tone="success">Güncel</StatusPill></div><DashboardTrendChart variant={trendVariant} /></section><section className="panel distribution-card"><div className="panel-heading"><div><p className="eyebrow">DURUM DAĞILIMI</p><h2>{shell ? "Doluluk dağılımı" : "Anlık sağlık"}</h2></div></div><DistributionDonut shell={shell} /></section></div>
     <div className="visual-insight-grid"><section className="panel compact-chart-card"><div><p className="eyebrow">KAYNAK DAĞILIMI</p><h2>{shell ? "Seviye bantları" : alarm ? "Alarm tipleri" : tool ? "Kullanım durumu" : "Alan yükü"}</h2></div><HorizontalBreakdown items={breakdown} /></section><section className="panel compact-chart-card"><div><p className="eyebrow">SAATLİK HAREKET</p><h2>Gün içi yoğunluk</h2></div><CompactBars values={shell ? [22,28,35,49,71,66,52,43,37,29,24,18] : [18,25,36,61,82,76,68,72,57,46,31,22]} tone={alarm ? "coral" : shell ? "teal" : "violet"} label="Gün içindeki saatlik yoğunluk dağılımı" /></section></div>
@@ -833,8 +849,7 @@ function DataTable({ service }: { service: Service }) {
 }
 
 function ReportView({ service }: { service: Service }) {
-  return <div className="view-stack"><SectionHeader eyebrow={`RAPORLAR · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="10 Temmuz–8 Ağustos 2026" actions={<><button className="secondary-button"><CalendarClock size={16} /> Son 30 gün</button><button className="primary-button"><FileText size={16} /> Dışa aktar</button></>} />
-    <OperationalFilters kind="report" />
+  return <div className="view-stack"><SectionHeader eyebrow={`RAPORLAR · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="10 Temmuz–8 Ağustos 2026" actions={<><FilterDropdown kind="report" /><button className="secondary-button"><CalendarClock size={16} /> Son 30 gün</button><button className="primary-button"><FileText size={16} /> Dışa aktar</button></>} />
     <div className="dashboard-grid"><section className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">ZAMAN SERİSİ</p><h2>{service.id === "report-sensors" ? "Sıcaklık ve nem eğrisi" : service.id === "report-pir" ? "Hareket algılama yoğunluğu" : "Dönemsel değişim"}</h2></div></div><div className="rechart-frame"><ResponsiveContainer width="100%" height="100%"><LineChart data={DASHBOARD_TRENDS.general} margin={{ top: 10, right: 8, left: -24, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 6" /><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)" }} /><Line type="monotone" dataKey="primary" name="Kayıt" stroke="var(--chart-blue)" strokeWidth={3} dot={{ r: 4, fill: "var(--surface)", strokeWidth: 2 }} activeDot={{ r: 6 }} /><Line type="monotone" dataKey="secondary" name="Karşılaştırma" stroke="var(--chart-violet)" strokeWidth={2} strokeDasharray="6 5" dot={false} /></LineChart></ResponsiveContainer></div></section><section className="panel distribution-card"><div className="panel-heading"><div><p className="eyebrow">DAĞILIM</p><h2>{service.id.includes("alarm") ? "Öncelik" : "Konum"}</h2></div></div><HorizontalBreakdown items={[{ label: "A Blok", value: 4820, tone: "blue" }, { label: "B Blok", value: 3740, tone: "teal" }, { label: "C Blok", value: 2860, tone: "violet" }, { label: "Diğer", value: 1940, tone: "amber" }]} /><div className="report-kpi-row"><div><span>Kayıt</span><strong>14.820</strong></div><div><span>Değişim</span><strong className="positive-text">+%8,4</strong></div></div></section></div>
     <DataTable service={service} />
   </div>;
@@ -862,7 +877,7 @@ function ServiceView({ service }: { service: Service }) {
   if (service.type === "report") return <ReportView service={service} />;
   if (service.type === "builder") return <BuilderView service={service} />;
   const metrics = getServiceSummary(service);
-  return <div className="view-stack"><SectionHeader eyebrow={getGroupLabel(service.group).toUpperCase()} title={service.title} actions={<><button className="secondary-button"><Filter size={16} /> Filtrele</button><button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><section className="summary-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <div key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={19} /></span><p><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.detail}</em></p></div>; })}</section><DataTable service={service} /></div>;
+  return <div className="view-stack"><SectionHeader eyebrow={getGroupLabel(service.group).toUpperCase()} title={service.title} actions={<><FilterDropdown kind="general" /><button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><section className="summary-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <div key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={19} /></span><p><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.detail}</em></p></div>; })}</section><DataTable service={service} /></div>;
 }
 
 function CommandPalette({ close, openService, openCatalog }: { close: () => void; openService: (id: string) => void; openCatalog: () => void }) {
@@ -902,7 +917,14 @@ export function NavbeaApp() {
     const restorePins = window.setTimeout(() => {
       const savedPins = window.localStorage.getItem("navbea:pinned-tabs");
       if (savedPins) {
-        try { setPinnedTabIds(JSON.parse(savedPins)); } catch { /* Keep safe defaults. */ }
+        try {
+          const parsedPins = JSON.parse(savedPins);
+          const validPins = Array.isArray(parsedPins)
+            ? parsedPins.filter((id): id is string => typeof id === "string" && (id === "catalog" || SERVICES.some((service) => service.id === id)))
+            : [];
+          setPinnedTabIds(validPins);
+          setTabs((current) => ["home", ...validPins, ...current.filter((id) => id !== "home" && !validPins.includes(id))]);
+        } catch { /* Keep safe defaults. */ }
       }
     }, 0);
     return () => window.clearTimeout(restorePins);
@@ -923,7 +945,13 @@ export function NavbeaApp() {
     setActiveId(id);
     setMobileMenuOpen(false);
     setFlyoutId(null);
-    setTabs((current) => current.includes(id) ? current : [...current, id].slice(-6));
+    setTabs((current) => {
+      if (current.includes(id)) return current;
+      const next = [...current, id];
+      if (next.length <= MAX_WORKSPACE_TABS) return next;
+      const removableId = next.find((candidate) => candidate !== "home" && candidate !== id && !pinnedTabIds.includes(candidate));
+      return removableId ? next.filter((candidate) => candidate !== removableId) : next;
+    });
     if (SERVICES.some((service) => service.id === id)) setRecentIds((current) => [id, ...current.filter((item) => item !== id)].slice(0, 6));
   };
   const openCatalog = (group = "Tümü") => { setCatalogGroup(group); openService("catalog"); };
@@ -968,13 +996,13 @@ export function NavbeaApp() {
   };
   const handleAppAction = (event: React.MouseEvent<HTMLDivElement>) => {
     const button = (event.target as HTMLElement).closest("button");
-    if (!button || button.closest(".main-nav, .workspace-tabs, .command-popover, .catalog-tabs, .group-grid, .recent-grid, .work-list")) return;
+    if (!button || button.closest(".main-nav, .workspace-tabs, .command-popover, .filter-dropdown, .catalog-tabs, .group-grid, .recent-grid, .work-list")) return;
     const label = (button.getAttribute("aria-label") || button.textContent || "").trim().replace(/\s+/g, " ");
     if (!label) return;
     if (/^(Yeni görev|Bileşen ekle|Adım ekle)$/.test(label) || /^(Yeni |.* (ekle|oluştur)$)/.test(label)) {
       event.stopPropagation();
       setActionDialog({ mode: "create", label, serviceId: activeId });
-    } else if (/^(Filtrele|Son 30 gün|Görünümü düzenle|Kataloğu düzenle)$/.test(label)) {
+    } else if (/^(Son 30 gün|Görünümü düzenle|Kataloğu düzenle)$/.test(label)) {
       event.stopPropagation();
       setActionDialog({ mode: "filter", label, serviceId: activeId });
     } else if (label === "Sütunlar") {
