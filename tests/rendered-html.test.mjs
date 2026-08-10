@@ -67,15 +67,22 @@ test("standard Next.js server renders the Navbea application", async () => {
 });
 
 test("contains the complete service tree and no Vinext runtime", async () => {
-  const [app, css, layout, packageSource, nextEnv] = await Promise.all([
+  const [app, css, layout, packageSource, nextEnv, dataTable, sharedUi, sidebarTree, mapManagement, dashboardManagement, timeDistribution, favicon] = await Promise.all([
     readFile(new URL("../app/NavbeaApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../next-env.d.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/DataTable.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/Ui.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/SidebarTree.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/MapManagementView.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/DashboardManagementView.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/TimeDistributionViews.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../public/favicon.svg", import.meta.url), "utf8"),
   ]);
 
-  const serviceBlock = app.slice(app.indexOf("const SERVICES"), app.indexOf("type SidebarNode"));
+  const serviceBlock = app.slice(app.indexOf("const SERVICES"), app.indexOf("const SIDEBAR_TREE"));
   const treeBlock = app.slice(app.indexOf("const SIDEBAR_TREE"), app.indexOf("function nodeContainsService"));
   const serviceIds = [...serviceBlock.matchAll(/\{ id: "([^"]+)", title:/g)].map((match) => match[1]);
   const sidebarIds = [...treeBlock.matchAll(/serviceId: "([^"]+)"/g)].map((match) => match[1]);
@@ -88,6 +95,8 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.equal(packageJson.scripts.build, "next build");
   assert.equal(packageJson.scripts.start, "next start");
   assert.equal(packageJson.dependencies.next, "16.3.0");
+  assert.match(packageJson.devDependencies.tailwindcss, /^\^?4\./);
+  assert.match(packageJson.devDependencies["@tailwindcss/postcss"], /^\^?4\./);
   assert.equal(packageJson.devDependencies?.vinext, undefined);
   assert.equal(packageJson.devDependencies?.vite, undefined);
   assert.doesNotMatch(nextEnv, /vinext/i);
@@ -106,5 +115,35 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(app, /getTableModel/);
   assert.match(css, /\.nav-flyout/);
   assert.match(css, /\.donut\.health-distribution/);
-  assert.match(layout, /manrope/i);
+  assert.match(layout, /GeistSans/);
+  assert.match(layout, /GeistMono/);
+  assert.match(layout, /favicon\.svg\?v=2/);
+  assert.equal(packageJson.dependencies.geist.startsWith("^"), true);
+  assert.match(app, /components\/navbea\/DataTable/);
+  assert.doesNotMatch(app, /\*{3,}\d{3}/);
+  assert.match(dataTable, /direction: "desc"/);
+  assert.match(dataTable, /direction: "asc"/);
+  assert.match(dataTable, /return null;/);
+  assert.match(dataTable, /> Düzenle</);
+  assert.match(dataTable, /> Sil</);
+  assert.match(dataTable, /setRows/);
+  assert.match(dataTable, /Tablo sayfaları/);
+  assert.match(dataTable, /const isIdentifier/);
+  assert.match(sharedUi, /export function SectionHeader/);
+  assert.match(sidebarTree, /export function SidebarTreeItem/);
+  assert.match(mapManagement, /Harita Yönetimi/);
+  assert.match(mapManagement, /Konum Ekle/);
+  assert.match(dashboardManagement, /Dashboard Ayarları/);
+  assert.match(dashboardManagement, /Widget KÜTÜPHANESİ/i);
+  assert.match(app, /\["Ad", "Konum", "Erişim Türü", "Geçiş Sayısı", "Eylemler"\]/);
+  assert.match(app, /\["Alarm Adı", "Konum", "Alarm Tipi", "Koşul", "Öncelik", "Başlangıç Tarihi", "Bitiş Tarihi", "Eylemler"\]/);
+  assert.match(app, /\[\.\.\.current, id\]/);
+  assert.match(app, /\["#", "ID", "Risk Faktörü Adı", "Eylemler"\]/);
+  assert.match(app, /\["Tanım Adı", "Konum", "Tür", "Hedef", "Tarih", "Eylemler"\]/);
+  assert.match(app, /\["#", "Ad", "Başlangıç Tarihi", "Bitiş Tarihi", "Konum", "Grup", "Eylemler"\]/);
+  assert.match(timeDistribution, /export function TimeMatchingView/);
+  assert.match(timeDistribution, /export function TimeApprovalView/);
+  assert.match(timeDistribution, /export function TimeReportView/);
+  assert.match(favicon, /#315FDF/);
+  assert.match(css, /input:focus-visible/);
 });

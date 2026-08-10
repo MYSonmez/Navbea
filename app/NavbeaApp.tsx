@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { MonitoringView } from "./MonitoringViews";
+import { DataTable, type TableModel } from "../components/navbea/DataTable";
+import { SidebarTreeItem, type SidebarNode } from "../components/navbea/SidebarTree";
+import { IconButton, SectionHeader, StatusPill } from "../components/navbea/Ui";
+import { MapManagementView } from "../components/navbea/MapManagementView";
+import { DashboardManagementView } from "../components/navbea/DashboardManagementView";
+import { TimeApprovalView, TimeMatchingView, TimeReportView } from "../components/navbea/TimeDistributionViews";
 import {
   Area,
   AreaChart,
@@ -47,7 +53,6 @@ import {
   KeyRound,
   Layers3,
   LayoutDashboard,
-  ListFilter,
   Map,
   MapPin,
   Menu,
@@ -139,7 +144,7 @@ const SERVICES: Service[] = [
   { id: "equipment-groups", title: "Ekipman Grupları", group: "Varlık", description: "Ekipman sınıfları ve grup üyelikleri.", icon: Boxes, type: "table" },
   { id: "equipment-devices", title: "Ekipman Cihazları", group: "Varlık", description: "Ekipman–cihaz atamaları ve pil durumları.", icon: Smartphone, type: "table" },
   { id: "beacon-devices", title: "Beacon Cihazları", group: "Varlık", description: "Beacon kimlikleri, konum ve sinyal bilgileri.", icon: Radio, type: "table" },
-  { id: "wifi-devices", title: "Wi‑Fi Cihazları", group: "Varlık", description: "Gateway ve Wi‑Fi cihaz sağlık durumları.", icon: Network, type: "table" },
+  { id: "wifi-devices", title: "Wifi Cihazları", group: "Varlık", description: "Gateway ve Wifi cihaz sağlık durumları.", icon: Network, type: "table" },
   { id: "access-control-devices", title: "Geçiş Kontrol Cihazları", group: "Varlık", description: "Webhook, turnike ve geçiş cihazları.", icon: DoorOpen, type: "table" },
   { id: "sensors", title: "Sensörler", group: "Varlık", description: "Sensör tipi, konumu, pil ve bağlantı durumu.", icon: Activity, type: "table" },
   { id: "pir-sensors", title: "PIR Sensörleri", group: "Varlık", description: "Hareket sensörleri ve son algılama bilgileri.", icon: Zap, type: "table" },
@@ -187,14 +192,6 @@ const SERVICES: Service[] = [
   { id: "system-logs", title: "Sistem Günlükleri", group: "Modüller", description: "Sistem olayları, kullanıcı işlemleri ve hata kayıtları.", icon: ScrollText, type: "table" },
 ];
 
-type SidebarNode = {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  serviceId?: string;
-  children?: SidebarNode[];
-};
-
 const SIDEBAR_TREE: SidebarNode[] = [
   {
     id: "dashboards",
@@ -230,8 +227,8 @@ const SIDEBAR_TREE: SidebarNode[] = [
         icon: Users,
         children: [
           { id: "personnels", label: "Personeller", icon: Users, serviceId: "personnels" },
-          { id: "personnel-groups", label: "Personel Grupları", icon: UsersRound, serviceId: "personnel-groups" },
-          { id: "personnel-devices", label: "Personel Cihazları", icon: Smartphone, serviceId: "personnel-devices" },
+          { id: "personnel-groups", label: "Gruplar", icon: UsersRound, serviceId: "personnel-groups" },
+          { id: "personnel-devices", label: "Cihazlar", icon: Smartphone, serviceId: "personnel-devices" },
           { id: "mobile-personnels", label: "Mobil Personeller", icon: UserCheck, serviceId: "mobile-personnels" },
         ],
       },
@@ -241,8 +238,8 @@ const SIDEBAR_TREE: SidebarNode[] = [
         icon: UserRoundPlus,
         children: [
           { id: "visitors", label: "Misafirler", icon: UserRoundPlus, serviceId: "visitors" },
-          { id: "visitor-groups", label: "Misafir Grupları", icon: UsersRound, serviceId: "visitor-groups" },
-          { id: "visitor-devices", label: "Misafir Cihazları", icon: Smartphone, serviceId: "visitor-devices" },
+          { id: "visitor-groups", label: "Gruplar", icon: UsersRound, serviceId: "visitor-groups" },
+          { id: "visitor-devices", label: "Cihazlar", icon: Smartphone, serviceId: "visitor-devices" },
         ],
       },
       {
@@ -251,8 +248,8 @@ const SIDEBAR_TREE: SidebarNode[] = [
         icon: Boxes,
         children: [
           { id: "equipments", label: "Ekipmanlar", icon: Archive, serviceId: "equipments" },
-          { id: "equipment-groups", label: "Ekipman Grupları", icon: Boxes, serviceId: "equipment-groups" },
-          { id: "equipment-devices", label: "Ekipman Cihazları", icon: Smartphone, serviceId: "equipment-devices" },
+          { id: "equipment-groups", label: "Gruplar", icon: Boxes, serviceId: "equipment-groups" },
+          { id: "equipment-devices", label: "Cihazlar", icon: Smartphone, serviceId: "equipment-devices" },
         ],
       },
       {
@@ -271,7 +268,7 @@ const SIDEBAR_TREE: SidebarNode[] = [
         icon: Network,
         children: [
           { id: "beacon-devices", label: "Beacon Cihazları", icon: Radio, serviceId: "beacon-devices" },
-          { id: "wifi-devices", label: "Wi-Fi Cihazları", icon: Network, serviceId: "wifi-devices" },
+          { id: "wifi-devices", label: "Wifi Cihazları", icon: Network, serviceId: "wifi-devices" },
           { id: "access-control-devices", label: "Geçiş Kontrol Cihazları", icon: DoorOpen, serviceId: "access-control-devices" },
         ],
       },
@@ -412,12 +409,232 @@ const TABLE_ROWS = [
 
 type MetricTone = "blue" | "teal" | "amber" | "coral" | "slate" | "indigo";
 type SummaryMetric = { label: string; value: string; detail: string; tone: MetricTone; icon: LucideIcon };
-type TableModel = { columns: string[]; rows: string[][]; total: number; title: string; searchLabel: string };
-
 const PEOPLE_SERVICES = ["personnels", "mobile-personnels", "personnel-groups", "attendance"];
 const VISITOR_SERVICES = ["visitors", "visitor-groups", "invitations"];
 const DEVICE_SERVICES = ["personnel-devices", "visitor-devices", "equipment-devices", "beacon-devices", "wifi-devices", "access-control-devices", "sensors", "pir-sensors", "tof-series", "switches", "turnstiles", "cameras"];
 const TASK_SERVICES = ["active-tasks", "checklists", "contractor-works", "workflows", "time-approval"];
+
+const CORE_MANAGEMENT_SERVICES = [
+  "personnels", "personnel-groups", "personnel-devices", "mobile-personnels",
+  "visitors", "visitor-groups", "visitor-devices",
+  "equipments", "equipment-groups", "equipment-devices",
+  "users", "roles", "mobile-users",
+  "beacon-devices", "wifi-devices", "access-control-devices",
+  "sensors", "pir-sensors",
+] as const;
+
+const CONFIGURATION_MANAGEMENT_SERVICES = [
+  "access-reader-groups", "areas", "alarms-management", "alarm-notifiers", "tags",
+] as const;
+
+const CONFIGURATION_MANAGEMENT_TITLES: Record<string, string> = {
+  "access-reader-groups": "Geçiş Kontrol Kuralları",
+  areas: "Bölge Yönetimi",
+  "alarms-management": "Alarm Yönetimi",
+  "alarm-notifiers": "Alarm Bildiricileri",
+  tags: "Etiketler",
+};
+
+const OPERATION_MANAGEMENT_SERVICES = [
+  "risk-factors", "attendance", "checklists", "contractor-works",
+] as const;
+
+const OPERATION_MANAGEMENT_TITLES: Record<string, string> = {
+  "risk-factors": "Risk Faktörleri",
+  attendance: "Mesai & Görev Yönetimi",
+  checklists: "Görev Yönetimi",
+  "contractor-works": "Alt Yüklenici İşleri",
+};
+
+const CORE_MANAGEMENT_SECTIONS: Record<string, string> = {
+  personnels: "Personel Yönetimi",
+  "personnel-groups": "Personel Yönetimi",
+  "personnel-devices": "Personel Yönetimi",
+  "mobile-personnels": "Personel Yönetimi",
+  visitors: "Misafir Yönetimi",
+  "visitor-groups": "Misafir Yönetimi",
+  "visitor-devices": "Misafir Yönetimi",
+  equipments: "Ekipman Yönetimi",
+  "equipment-groups": "Ekipman Yönetimi",
+  "equipment-devices": "Ekipman Yönetimi",
+  users: "Kullanıcı Yönetimi",
+  roles: "Kullanıcı Yönetimi",
+  "mobile-users": "Kullanıcı Yönetimi",
+  "beacon-devices": "Cihaz Yönetimi",
+  "wifi-devices": "Cihaz Yönetimi",
+  "access-control-devices": "Cihaz Yönetimi",
+  sensors: "Sensör Yönetimi",
+  "pir-sensors": "Sensör Yönetimi",
+};
+
+const CORE_MANAGEMENT_TABLES: Record<string, TableModel> = {
+  personnels: {
+    title: "Personel Listesi", searchLabel: "Personel ara", total: 296,
+    columns: ["ID", "Ad", "Soyad", "Vatandaşlık Numarası", "Sicil No", "Konum", "Grup", "İş Bitiş Tarihi", "Eylemler"],
+    rows: [
+      ["2048", "Mustafa", "Aydın", "10000000432", "NV-2048", "A Blok", "Operasyon", "—"],
+      ["2047", "Ahmet", "Demir", "10000000718", "NV-2047", "B Blok", "Teknik", "—"],
+      ["2046", "Merve", "Kaya", "10000000964", "NV-2046", "C Blok", "Güvenlik", "31.12.2026"],
+      ["2045", "Selin", "Yılmaz", "10000000185", "NV-2045", "Depo", "Lojistik", "—"],
+    ],
+  },
+  "personnel-groups": {
+    title: "Personel Grup Listesi", searchLabel: "Grup ara", total: 15,
+    columns: ["#", "Grup Adı", "Konum", "Üst Grup", "Çıkış Oluştur", "Personel Sayısı", "Eylemler"],
+    rows: [
+      ["1", "Operasyon", "Merkez Kampüs", "—", "Evet", "84"],
+      ["2", "Teknik", "Merkez Kampüs", "Operasyon", "Evet", "62"],
+      ["3", "Güvenlik", "Merkez Kampüs", "—", "Hayır", "41"],
+      ["4", "Taşeron", "Şantiye", "—", "Evet", "109"],
+    ],
+  },
+  "personnel-devices": {
+    title: "Personel Cihaz Listesi", searchLabel: "Cihaz veya personel ara", total: 296,
+    columns: ["ID", "Cihaz ID", "RF ID", "Personel", "Konum", "Batarya Durumu", "Cihaz Tipi", "Eylemler"],
+    rows: [
+      ["1", "DD9F-038C28EB", "RF-84120", "Mustafa Aydın", "A Blok", "%92", "Beacon"],
+      ["2", "DD9F-039C18AA", "RF-84121", "Ahmet Demir", "B Blok", "%76", "Beacon"],
+      ["3", "DD9F-041A92BC", "RF-84122", "Atanmamış", "C Blok", "%48", "Kart"],
+      ["4", "DD9F-047B36DE", "RF-84123", "Merve Kaya", "C Blok", "%18", "Beacon"],
+    ],
+  },
+  "mobile-personnels": {
+    title: "Mobil Personel Listesi", searchLabel: "Mobil personel ara", total: 24,
+    columns: ["ID", "Ad", "Soyad", "Vatandaşlık Numarası", "Sicil No", "Konum", "Grup", "İş Bitiş Tarihi", "Eylemler"],
+    rows: [
+      ["401", "Ece", "Arslan", "10000000241", "MP-0401", "A Blok", "Operasyon", "—"],
+      ["402", "Mehmet", "Karaca", "10000000389", "MP-0402", "B Blok", "Teknik", "—"],
+      ["403", "Seda", "Acar", "10000000512", "MP-0403", "C Blok", "Güvenlik", "30.09.2026"],
+    ],
+  },
+  visitors: {
+    title: "Misafir Listesi", searchLabel: "Misafir ara", total: 38,
+    columns: ["ID", "Ad", "Soyad", "Grup", "Konum", "Vatandaşlık Numarası", "Plaka", "Ziyaret Sebebi", "Giriş Tarihi", "Çıkış Tarihi", "Eylemler"],
+    rows: [
+      ["501", "Deniz", "Akın", "Tedarikçi", "A Blok", "10000000103", "34 ABC 123", "Teknik görüşme", "10.08.2026 09:12", "—"],
+      ["502", "Zeynep", "Erol", "Ziyaretçi", "B Blok", "10000000284", "06 DE 284", "Toplantı", "10.08.2026 10:05", "10.08.2026 12:40"],
+      ["503", "Can", "Öz", "Taşeron", "C Blok", "10000000719", "—", "Bakım", "10.08.2026 11:18", "—"],
+    ],
+  },
+  "visitor-groups": {
+    title: "Misafir Grup Listesi", searchLabel: "Misafir grubu ara", total: 6,
+    columns: ["ID", "Ad", "Konum", "Toplam", "Eylemler"],
+    rows: [
+      ["1", "Tedarikçiler", "Merkez Kampüs", "12"],
+      ["2", "Günlük Ziyaretçiler", "Ana Bina", "18"],
+      ["3", "Bakım Ekibi", "C Blok", "8"],
+    ],
+  },
+  "visitor-devices": {
+    title: "Misafir Cihaz Listesi", searchLabel: "Cihaz veya misafir ara", total: 42,
+    columns: ["#", "Cihaz ID", "RF ID", "Misafir", "Konum", "Batarya Durumu", "Eylemler"],
+    rows: [
+      ["1", "VD-1048", "RF-91048", "Deniz Akın", "A Blok", "%88"],
+      ["2", "VD-1049", "RF-91049", "Zeynep Erol", "B Blok", "%72"],
+      ["3", "VD-1050", "RF-91050", "Atanmamış", "Ana Giriş", "%64"],
+    ],
+  },
+  equipments: {
+    title: "Ekipman Listesi", searchLabel: "Ekipman ara", total: 296,
+    columns: ["#", "Ekipman Adı", "Seri Numarası", "Grup", "Konum", "Eylemler"],
+    rows: [
+      ["1", "Forklift 07", "FL-2024-007", "İş Makineleri", "D Blok"],
+      ["2", "Termal Kamera 03", "TK-2025-003", "Ölçüm Cihazları", "C Blok"],
+      ["3", "Jeneratör 02", "JN-2023-002", "Enerji", "B Blok"],
+    ],
+  },
+  "equipment-groups": {
+    title: "Ekipman Grup Listesi", searchLabel: "Ekipman grubu ara", total: 12,
+    columns: ["#", "Grup Adı", "Ekipman Sayısı", "Konum", "Eylemler"],
+    rows: [
+      ["1", "İş Makineleri", "48", "Şantiye"],
+      ["2", "Ölçüm Cihazları", "36", "Merkez Kampüs"],
+      ["3", "Enerji", "22", "B Blok"],
+    ],
+  },
+  "equipment-devices": {
+    title: "Ekipman Cihaz Listesi", searchLabel: "Cihaz veya ekipman ara", total: 296,
+    columns: ["#", "Cihaz ID", "Ekipman Sayısı", "Konum", "Batarya Durumu", "Eylemler"],
+    rows: [
+      ["1", "EQ-0187", "Forklift 07", "D Blok", "%81"],
+      ["2", "EQ-0296", "Termal Kamera 03", "C Blok", "%68"],
+      ["3", "EQ-0314", "Atanmamış", "Depo", "%44"],
+    ],
+  },
+  users: {
+    title: "Kullanıcı Listesi", searchLabel: "Kullanıcı ara", total: 84,
+    columns: ["ID", "Ad Soyad", "Kullanıcı Adı", "E-posta", "Rol", "Durum", "Eylemler"],
+    rows: [
+      ["1", "Ayşe Şahin", "ayse.sahin", "ayse.sahin@navbea.com", "Sistem Yöneticisi", "Aktif"],
+      ["2", "Burak Kaya", "burak.kaya", "burak.kaya@navbea.com", "Operasyon", "Aktif"],
+      ["3", "Cem Yıldız", "cem.yildiz", "cem.yildiz@navbea.com", "Güvenlik", "Pasif"],
+    ],
+  },
+  roles: {
+    title: "Rol Listesi", searchLabel: "Rol ara", total: 11,
+    columns: ["#", "ID", "Rol Adı", "Eylemler"],
+    rows: [
+      ["1", "1", "Sistem Yöneticisi"],
+      ["2", "2", "Operasyon"],
+      ["3", "3", "Güvenlik"],
+      ["4", "4", "Raporlama"],
+    ],
+  },
+  "mobile-users": {
+    title: "Mobil Kullanıcı Listesi", searchLabel: "Mobil kullanıcı ara", total: 18,
+    columns: ["#", "ID", "Ad", "E-posta", "MAC", "Eylemler"],
+    rows: [
+      ["1", "MU-101", "Mehmet Karaca", "mehmet.karaca@navbea.com", "A4:C3:F0:18:2B:91"],
+      ["2", "MU-102", "Ece Arslan", "ece.arslan@navbea.com", "7C:10:C9:3A:5F:22"],
+      ["3", "MU-103", "Seda Acar", "seda.acar@navbea.com", "D8:31:34:87:1C:06"],
+    ],
+  },
+  "beacon-devices": {
+    title: "Beacon Cihaz Listesi", searchLabel: "Beacon cihazı ara", total: 418,
+    columns: ["Cihaz ID", "UUID", "Major", "Minor", "Konum", "Kat", "Bölge", "Eylemler"],
+    rows: [
+      ["BCN-1048", "FDA50693-A4E2-4FB1-AFCF-C6EB07647825", "100", "1048", "Merkez Kampüs", "2. Kat", "Ofis 10"],
+      ["BCN-1049", "FDA50693-A4E2-4FB1-AFCF-C6EB07647825", "100", "1049", "B Blok", "Zemin", "Ana Giriş"],
+      ["BCN-1050", "FDA50693-A4E2-4FB1-AFCF-C6EB07647825", "101", "1050", "C Blok", "1. Kat", "Teknik Alan"],
+    ],
+  },
+  "wifi-devices": {
+    title: "Wi-Fi Cihaz Listesi", searchLabel: "Wi-Fi cihazı ara", total: 36,
+    columns: ["Cihaz ID", "Cihaz Tipi", "Konum", "Kat", "Bölge", "IP Adresi", "Durum", "Sinyal Gücü", "Sinyal Durumu", "Eylemler"],
+    rows: [
+      ["GW-0014", "Gateway", "Merkez Kampüs", "2. Kat", "Ofis 10", "192.168.1.14", "Aktif", "-52 dBm", "İyi"],
+      ["GW-0018", "Gateway", "B Blok", "Zemin", "Ana Giriş", "192.168.1.18", "Aktif", "-67 dBm", "Orta"],
+      ["GW-0021", "Access Point", "C Blok", "1. Kat", "Teknik Alan", "192.168.1.21", "Pasif", "-84 dBm", "Zayıf"],
+    ],
+  },
+  "access-control-devices": {
+    title: "Geçiş Kontrol Cihaz Listesi", searchLabel: "Geçiş cihazı ara", total: 24,
+    columns: ["Cihaz Adresi", "Cihaz Kimliği", "Cihaz Tipi", "Konum", "Bölge", "Kurallı Geçiş", "Sinyal Durumu", "Durum", "Eylemler"],
+    rows: [
+      ["192.168.2.21", "AC-00:21:48", "Turnike", "Merkez Kampüs", "Ana Giriş", "Evet", "İyi", "Aktif"],
+      ["192.168.2.22", "AC-00:22:52", "Kart Okuyucu", "B Blok", "Kuzey Kapı", "Evet", "Orta", "Aktif"],
+      ["192.168.2.23", "AC-00:23:17", "Kapı Kontrolü", "C Blok", "Teknik Alan", "Hayır", "Zayıf", "Pasif"],
+    ],
+  },
+  sensors: {
+    title: "Sensör Listesi", searchLabel: "Sensör ara", total: 296,
+    columns: ["ID", "Sensör Adı", "Cihaz ID", "Konum", "Kat", "Bölge", "Batarya", "Eylemler"],
+    rows: [
+      ["SN-1048", "Sıcaklık Sensörü 08", "SNS-1048", "Merkez Kampüs", "2. Kat", "Ofis 10", "%86"],
+      ["SN-1052", "Nem Sensörü 12", "SNS-1052", "B Blok", "Zemin", "Depo", "%71"],
+      ["SN-1061", "ToF Sensörü 03", "TOF-1061", "C Blok", "3. Kat", "Engelli WC", "%54"],
+    ],
+  },
+  "pir-sensors": {
+    title: "PIR Sensör Listesi", searchLabel: "PIR sensörü ara", total: 64,
+    columns: ["ID", "Sensör Adı", "Cihaz ID", "Konum", "Kat", "Bölge", "Batarya", "Eylemler"],
+    rows: [
+      ["PIR-101", "Koridor PIR 01", "PIR-D-101", "Merkez Kampüs", "2. Kat", "Doğu Koridor", "%91"],
+      ["PIR-102", "Depo PIR 02", "PIR-D-102", "B Blok", "Zemin", "Depo", "%74"],
+      ["PIR-103", "Giriş PIR 03", "PIR-D-103", "C Blok", "Zemin", "Ana Giriş", "%39"],
+    ],
+  },
+};
 
 function getGroupLabel(groupId: string) {
   return GROUPS.find((group) => group.id === groupId)?.label ?? groupId;
@@ -432,10 +649,39 @@ function isAlarmService(service: Service) {
 }
 
 function getCreateLabel(service: Service) {
+  const managementLabels: Record<string, string> = {
+    personnels: "Personel Ekle",
+    "personnel-groups": "Grup Ekle",
+    "personnel-devices": "Cihaz Ekle",
+    "mobile-personnels": "Mobil Personel Ekle",
+    visitors: "Misafir Ekle",
+    "visitor-groups": "Grup Ekle",
+    "visitor-devices": "Cihaz Ekle",
+    equipments: "Ekipman Ekle",
+    "equipment-groups": "Ekipman Grubu Ekle",
+    "equipment-devices": "Ekipman Cihazı Ekle",
+    users: "Kullanıcı Ekle",
+    roles: "Rol Ekle",
+    "mobile-users": "Mobil Kullanıcı Ekle",
+    "beacon-devices": "Beacon Cihaz Ekle",
+    "wifi-devices": "Wifi Cihazı Ekle",
+    "access-control-devices": "Geçiş Kontrol Cihazı Ekle",
+    sensors: "Sensör Ekle",
+    "pir-sensors": "PIR Sensörü Ekle",
+    "access-reader-groups": "Kural Ekle",
+    areas: "Bölge Ekle",
+    "alarms-management": "Alarm Ekle",
+    "alarm-notifiers": "Alarm Bildirici Ekle",
+    tags: "Etiket Ekle",
+    "risk-factors": "Risk Faktörü Ekle",
+    attendance: "Tanım Ekle",
+    checklists: "Kontrol Listesi Ekle",
+    "contractor-works": "Taşeron İş Ekle",
+  };
+  if (managementLabels[service.id]) return managementLabels[service.id];
   if (service.id === "cameras") return "Kamera ekle";
   if (service.id === "campaigns") return "Kampanya ekle";
   if (service.id === "workflows") return "İş akışı ekle";
-  if (service.id === "access-reader-groups") return "Kural ekle";
   if (service.id === "switches") return "Anahtar ekle";
   if (service.id === "turnstiles") return "Turnike ekle";
   if (service.id === "tof-series") return "ToF serisi ekle";
@@ -504,6 +750,7 @@ function getServiceSummary(service: Service): SummaryMetric[] {
 }
 
 function getTableModel(service: Service): TableModel {
+  if (CORE_MANAGEMENT_TABLES[service.id]) return CORE_MANAGEMENT_TABLES[service.id];
   const baseIds = TABLE_ROWS.map((row) => row[0]);
   const locations = TABLE_ROWS.map((row) => row[1]);
   const statuses = TABLE_ROWS.map((row) => row[3]);
@@ -536,12 +783,80 @@ function getTableModel(service: Service): TableModel {
     ] };
   }
   if (service.id === "access-reader-groups") {
-    return { title: "Geçiş kontrol kuralları", searchLabel: "Kural veya erişim türü ara", total: 10, columns: ["ID", "Kural", "Konum", "Erişim Türü", "Geçiş Sayısı", "Durum", "Eylemler"], rows: [
-      ["ACR-10", "Mesai Saatleri", "Merkez Kampüs", "Saat aralığı", "1.284", "Etkin"],
-      ["ACR-09", "Teknik Alan", "C Blok", "Tarih aralığı", "342", "Etkin"],
-      ["ACR-08", "Haftalık Ziyaretçi", "Ana Bina", "Haftalık plan", "196", "Etkin"],
-      ["ACR-07", "Yönetici Geçişi", "Tüm kampüs", "Sınırsız", "2.842", "Etkin"],
-      ["ACR-06", "Bakım Ekibi", "B Blok", "Aylık plan", "418", "Dikkat"],
+    return { title: "Geçiş kontrol kuralları", searchLabel: "Ad, konum veya erişim türü ara", total: 10, columns: ["Ad", "Konum", "Erişim Türü", "Geçiş Sayısı", "Eylemler"], rows: [
+      ["Mesai Saatleri", "Merkez Kampüs", "Saat aralığında çoklu erişim", "1.284"],
+      ["Teknik Alan", "C Blok", "İki tarih arasında erişim", "342"],
+      ["Haftalık Ziyaretçi", "Ana Bina", "Haftalık plan", "196"],
+      ["Yönetici Geçişi", "Tüm kampüs", "Sınırsız", "2.842"],
+      ["Bakım Ekibi", "B Blok", "Aylık plan", "418"],
+    ] };
+  }
+  if (service.id === "areas") {
+    return { title: "Bölgeler", searchLabel: "Bölge, konum veya kat ara", total: 24, columns: ["ID", "Bölge Adı", "Bölge Tipi", "Konum", "Kat", "Eylemler"], rows: [
+      ["AR-024", "Üretim Hattı", "Çalışma Alanı", "Merkez Kampüs", "Zemin"],
+      ["AR-021", "Kuzey Toplanma Alanı", "Toplanma Alanı", "Merkez Kampüs", "Açık Alan"],
+      ["AR-018", "Teknik Oda", "Riskli Alan", "C Blok", "2. Kat"],
+      ["AR-012", "Yemekhane", "Ortak Alan", "Ana Bina", "1. Kat"],
+      ["AR-007", "Depo Girişi", "Geçiş Alanı", "Depo", "Zemin"],
+    ] };
+  }
+  if (service.id === "alarms-management") {
+    return { title: "Alarm kuralları", searchLabel: "Alarm adı, tipi veya konum ara", total: 48, columns: ["Alarm Adı", "Konum", "Alarm Tipi", "Koşul", "Öncelik", "Başlangıç Tarihi", "Bitiş Tarihi", "Eylemler"], rows: [
+      ["Yetkisiz Alan Girişi", "C Blok", "Yetkisiz alana giriş", "Bölgeye giriş", "Kritik", "01.08.2026 00:00", "31.12.2026 23:59"],
+      ["Hareketsizlik Kontrolü", "Ana Bina", "Personel hareket etmiyor", "15 dakikadan uzun", "Yüksek", "01.08.2026 08:00", "31.12.2026 18:00"],
+      ["Sıcaklık Eşiği", "B Blok", "Sensör aralık dışı", "> 29 °C", "Orta", "01.08.2026 00:00", "31.12.2026 23:59"],
+      ["Gateway Bağlantısı", "Merkez Kampüs", "Gateway sinyali yok", "5 dakika çevrimdışı", "Yüksek", "01.08.2026 00:00", "31.12.2026 23:59"],
+      ["Azami Kişi Sayısı", "Yemekhane", "Maksimum kişi", "> 180 kişi", "Orta", "01.08.2026 11:00", "31.12.2026 15:00"],
+    ] };
+  }
+  if (service.id === "alarm-notifiers") {
+    return { title: "Alarm bildiricileri", searchLabel: "Bildirici, alarm tipi veya konum ara", total: 12, columns: ["#", "Alarm Bildirici Adı", "Alarm Tipi", "Konum", "Eylemler"], rows: [
+      ["1", "Kritik Alarm Ekibi", "Tüm kritik alarmlar", "Merkez Kampüs"],
+      ["2", "Teknik Bakım", "Cihaz ve sensör alarmları", "B Blok"],
+      ["3", "Güvenlik Merkezi", "Geçiş ve alan alarmları", "Tüm konumlar"],
+      ["4", "Acil Durum Sorumluları", "Acil durum butonu", "Merkez Kampüs"],
+    ] };
+  }
+  if (service.id === "tags") {
+    return { title: "Etiketler", searchLabel: "Etiket adı veya tipi ara", total: 16, columns: ["#", "ID", "Etiket Adı", "Etiket Tipi", "Eylemler"], rows: [
+      ["1", "TAG-016", "Yüksekte Çalışma", "Checklist"],
+      ["2", "TAG-014", "Teknik Ekip", "Personel"],
+      ["3", "TAG-009", "Kritik Alan", "Alarm"],
+      ["4", "TAG-006", "Toplanma Noktası", "Bölge"],
+    ] };
+  }
+  if (service.id === "risk-factors") {
+    return { title: "Risk faktörleri", searchLabel: "Risk faktörü ara", total: 2, columns: ["#", "ID", "Risk Faktörü Adı", "Eylemler"], rows: [
+      ["1", "4", "Deneme test"],
+      ["2", "1", "dene12"],
+    ] };
+  }
+  if (service.id === "attendance") {
+    return { title: "Mesai ve görev tanımları", searchLabel: "Tanım, konum veya tür ara", total: 6, columns: ["Tanım Adı", "Konum", "Tür", "Hedef", "Tarih", "Eylemler"], rows: [
+      ["rapor", "Map 1", "Mesai Giriş–Çıkış Takibi", "Personel", "28.11.2025 14:12:16"],
+      ["denemeeee", "Map 1", "İzin & Mazeret", "Personel", "28.11.2025 14:15:22"],
+      ["denme", "Map 1", "Mesai Giriş–Çıkış Takibi", "Personel", "28.11.2025 14:15:42"],
+      ["Holiday #1764332288328", "Map 1", "İzin & Mazeret", "Personel", "28.11.2025 15:18:09"],
+      ["deneme", "Map 1", "Mesai Giriş–Çıkış Takibi", "Personel", "23.02.2026 15:28:56"],
+      ["x", "Map 1", "Mesai Giriş–Çıkış Takibi", "Personel", "23.02.2026 15:50:56"],
+    ] };
+  }
+  if (service.id === "checklists") {
+    return { title: "Kontrol listeleri", searchLabel: "Kontrol listesi ara", total: 4, columns: ["#", "Ad", "Eylemler"], rows: [
+      ["10", "EO1"],
+      ["8", "Deneme çalik"],
+      ["5", "deneme 2 checklist"],
+      ["4", "Test Görev 2"],
+    ] };
+  }
+  if (service.id === "contractor-works") {
+    return { title: "Alt yüklenici işleri", searchLabel: "İş, konum veya grup ara", total: 13, columns: ["#", "Ad", "Başlangıç Tarihi", "Bitiş Tarihi", "Konum", "Grup", "Eylemler"], rows: [
+      ["19", "dene11", "17.10.2025 00:00", "17.10.2025 00:00", "Map 1", "Beyaz Yaka"],
+      ["18", "denesaat", "01.10.2025 03:01", "01.10.2025 05:05", "Map 1", "Personel"],
+      ["17", "deneme", "17.10.2025 00:00", "17.10.2025 00:00", "Map 1", "Beyaz Yaka"],
+      ["16", "saat", "15.10.2025 00:00", "15.10.2025 00:00", "Map 1", "Beyaz Yaka"],
+      ["15", "aaaauy", "10.10.2025 00:00", "22.10.2025 00:00", "Map 1", "Beyaz Yaka"],
+      ["14", "son", "01.10.2025 00:00", "09.10.2025 00:00", "Map 1", "Personel"],
     ] };
   }
   if (service.id === "personnels" || service.id === "mobile-personnels") {
@@ -581,48 +896,6 @@ function getTableModel(service: Service): TableModel {
   return { title: "Kayıt listesi", searchLabel: "Listede ara", total: 128, columns: ["ID", "Ad", "Kategori", "Konum", "Son Güncelleme", "Durum", "Eylemler"], rows: baseIds.map((id, index) => [id, index ? `${service.title} ${String(index + 1).padStart(2, "0")}` : service.title, TABLE_ROWS[index][2], locations[index], TABLE_ROWS[index][4], statuses[index]]) };
 }
 
-function IconButton({ label, children, onClick, active = false }: { label: string; children: React.ReactNode; onClick?: () => void; active?: boolean }) {
-  return <button className={`icon-button ${active ? "active" : ""}`} aria-label={label} title={label} onClick={onClick}>{children}</button>;
-}
-
-function SidebarTreeItem({
-  node,
-  level,
-  activeId,
-  expandedNodes,
-  toggleNode,
-  openService,
-}: {
-  node: SidebarNode;
-  level: number;
-  activeId: string;
-  expandedNodes: string[];
-  toggleNode: (id: string) => void;
-  openService: (id: string) => void;
-}) {
-  const Icon = node.icon;
-  const hasChildren = Boolean(node.children?.length);
-  const expanded = expandedNodes.includes(node.id);
-  const active = node.serviceId === activeId;
-  const branchActive = nodeContainsService(node, activeId);
-  const levelClass = `level-${Math.min(level, 2)}`;
-
-  if (!hasChildren) {
-    return <button className={`nav-tree-link ${levelClass} ${active ? "active" : ""}`} onClick={() => node.serviceId && openService(node.serviceId)} title={node.label}><Icon size={level > 0 ? 15 : 18} /><span>{node.label}</span>{node.serviceId === "live" ? <i className="live-nav-dot" /> : null}</button>;
-  }
-
-  return <div className={`nav-tree-node ${levelClass} ${branchActive ? "branch-active" : ""}`}>
-    <button className="nav-tree-toggle" aria-expanded={expanded} onClick={() => toggleNode(node.id)} title={node.label}>
-      <Icon size={level > 0 ? 15 : 18} /><span>{node.label}</span>{expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-    </button>
-    {expanded ? <div className="nav-tree-children">{node.children?.map((child) => <SidebarTreeItem key={child.id} node={child} level={level + 1} activeId={activeId} expandedNodes={expandedNodes} toggleNode={toggleNode} openService={openService} />)}</div> : null}
-  </div>;
-}
-
-function StatusPill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: string }) {
-  return <span className={`status-pill ${tone}`}><span className="status-dot" />{children}</span>;
-}
-
 type ActionDialogState = { mode: "create" | "filter" | "columns"; label: string; serviceId?: string };
 
 function ActionDialog({ state, close, confirm }: { state: ActionDialogState; close: () => void; confirm: (message: string) => void }) {
@@ -636,7 +909,7 @@ function ActionDialog({ state, close, confirm }: { state: ActionDialogState; clo
   useEffect(() => { firstFieldRef.current?.focus(); }, []);
   return <div className="action-overlay"><button className="action-backdrop" aria-label="Pencereyi kapat" onClick={close} /><section className="action-dialog" role="dialog" aria-modal="true" aria-label={title}>
     <div className="action-dialog-head"><div><p className="eyebrow">{state.mode === "create" ? workflowLike ? "YENİ İŞ AKIŞI" : "YENİ KAYIT" : "GÖRÜNÜM AYARLARI"}</p><h2>{title}</h2>{service ? <p>{service.title}</p> : null}</div><IconButton label="Pencereyi kapat" onClick={close}><X size={17} /></IconButton></div>
-    {state.mode === "columns" ? <div className="column-options">{["ID", "Ad / Başlık", "Konum", "Grup", "Durum", "Son Güncelleme"].map((column) => <label key={column}><input type="checkbox" defaultChecked /> <span>{column}</span></label>)}</div> : <div className="action-form">
+    {state.mode === "columns" ? <div className="column-options">{(service ? getTableModel(service).columns.filter((column) => column !== "Eylemler") : ["ID", "Ad / Başlık", "Konum", "Grup", "Durum", "Son Güncelleme"]).map((column) => <label key={column}><input type="checkbox" defaultChecked /> <span>{column}</span></label>)}</div> : <div className="action-form">
       {state.mode === "create" ? <label><span>{workflowLike ? "Akış adı" : personLike || visitorLike ? "Ad Soyad" : deviceLike ? "Varlık adı" : "Kayıt adı"}</span><input ref={firstFieldRef} placeholder={workflowLike ? "Örn. Vardiya süre kontrolü" : personLike || visitorLike ? "Ad ve soyad girin" : "Açıklayıcı bir ad girin"} /></label> : null}
       {state.mode === "create" && workflowLike ? <><label><span>Başlangıç türü</span><select><option>Zaman planı</option><option>Personel hareketi</option><option>Sensör olayı</option><option>Manuel başlangıç</option></select></label><label><span>Kapsam</span><select><option>Tüm kampüs</option><option>Ana Bina</option><option>C Blok</option></select></label></> : null}
       {state.mode === "create" && personLike ? <><label><span>Sicil numarası</span><input placeholder="Örn. NV-1042" /></label><label><span>Personel grubu</span><select><option>Operasyon</option><option>Teknik</option><option>Güvenlik</option></select></label></> : null}
@@ -648,10 +921,6 @@ function ActionDialog({ state, close, confirm }: { state: ActionDialogState; clo
     </div>}
     <div className="action-dialog-footer"><button className="secondary-button" onClick={close}>Vazgeç</button><button className="primary-button" onClick={() => confirm(state.mode === "create" ? `${state.label} hazırlandı` : state.mode === "filter" ? "Filtreler uygulandı" : "Sütun görünümü güncellendi")}>{state.mode === "create" ? workflowLike ? "Akışı oluştur" : "Kaydet" : "Uygula"}</button></div>
   </section></div>;
-}
-
-function SectionHeader({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description?: string; actions?: React.ReactNode }) {
-  return <div className="section-header"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1>{description ? <p className="section-description">{description}</p> : null}</div>{actions ? <div className="header-actions">{actions}</div> : null}</div>;
 }
 
 function CompactBars({ values, tone = "blue", label }: { values: number[]; tone?: string; label: string }) {
@@ -830,7 +1099,13 @@ function LiveView({ emergency = false }: { emergency?: boolean }) {
   </div>;
 }
 
-function DashboardView({ service }: { service: Service }) {
+type TableCallbacks = {
+  onColumns?: () => void;
+  onExport?: () => void;
+  onNotice?: (message: string) => void;
+};
+
+function DashboardView({ service, tableCallbacks }: { service: Service; tableCallbacks?: TableCallbacks }) {
   const metrics = getServiceSummary(service);
   const shell = service.id === "shell-dispenser";
   const alarm = service.id === "alarm-dashboard";
@@ -842,23 +1117,14 @@ function DashboardView({ service }: { service: Service }) {
     <section className="metric-grid dashboard-metric-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <article className="metric-card" key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={20} /></span><div><small>{metric.label}</small><strong>{metric.value}</strong><span className="trend">{metric.detail}</span></div></article>; })}</section>
     <div className={`dashboard-grid dashboard-grid-${trendVariant}`}><section className="panel chart-card dashboard-primary-chart"><div className="panel-heading"><div><p className="eyebrow">SON 7 GÜN</p><h2>{shell ? "Doluluk değişimi" : alarm ? "Alarm yoğunluğu" : tool ? "Ekipman kullanımı" : "Operasyon trendi"}</h2></div><StatusPill tone="success">Güncel</StatusPill></div><DashboardTrendChart variant={trendVariant} /></section><section className="panel distribution-card dashboard-distribution"><div className="panel-heading"><div><p className="eyebrow">DURUM DAĞILIMI</p><h2>{shell ? "Doluluk dağılımı" : "Anlık sağlık"}</h2></div></div><DistributionDonut shell={shell} /></section></div>
     <div className="visual-insight-grid"><section className="panel compact-chart-card"><div><p className="eyebrow">KAYNAK DAĞILIMI</p><h2>{shell ? "Seviye bantları" : alarm ? "Alarm tipleri" : tool ? "Kullanım durumu" : "Alan yükü"}</h2></div><HorizontalBreakdown items={breakdown} /></section><section className="panel compact-chart-card"><div><p className="eyebrow">SAATLİK HAREKET</p><h2>Gün içi yoğunluk</h2></div><CompactBars values={shell ? [22,28,35,49,71,66,52,43,37,29,24,18] : [18,25,36,61,82,76,68,72,57,46,31,22]} tone={alarm ? "coral" : shell ? "teal" : "violet"} label="Gün içindeki saatlik yoğunluk dağılımı" /></section></div>
-    <DataTable service={service} />
+    <DataTable key={service.id} model={getTableModel(service)} {...tableCallbacks} />
   </div>;
 }
 
-function DataTable({ service }: { service: Service }) {
-  const [tableQuery, setTableQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const model = useMemo(() => getTableModel(service), [service]);
-  const visibleRows = model.rows.filter((row) => row.join(" ").toLocaleLowerCase("tr").includes(tableQuery.toLocaleLowerCase("tr")));
-
-  return <section className="panel data-panel"><div className="panel-heading"><div><p className="eyebrow">KAYITLAR</p><h2>{model.title}</h2></div><div className="table-actions"><label className="inline-search"><Search size={15} /><input aria-label="Tabloda ara" placeholder={`${model.searchLabel}…`} value={tableQuery} onChange={(event) => { setTableQuery(event.target.value); setPage(1); }} /></label><button className="secondary-button"><ListFilter size={16} /> Sütunlar</button></div></div><div className="table-wrap"><table><thead><tr>{model.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{visibleRows.length ? visibleRows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${row[0]}-${index}`}>{index === 0 ? <span className="mono">{cell}</span> : index === 1 ? <strong>{cell}</strong> : index === row.length - 1 ? <StatusPill tone={["Aktif", "Etkin", "Dolu", "İçeride", "Devam ediyor", "Kaydedildi"].includes(cell) ? "success" : ["Dikkat", "Orta", "Onay bekliyor", "Planlandı"].includes(cell) ? "warning" : ["Kritik", "Boş", "Düşük", "Gecikti", "Kilitli"].includes(cell) ? "danger" : "neutral"}>{cell}</StatusPill> : cell}</td>)}<td><IconButton label="Satır seçenekleri"><MoreHorizontal size={17} /></IconButton></td></tr>) : <tr><td colSpan={model.columns.length} className="empty-table">Arama kriterine uygun kayıt bulunamadı.</td></tr>}</tbody></table></div><div className="table-footer"><span>{visibleRows.length} / {model.total.toLocaleString("tr-TR")} kayıt</span><div><button disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button>{[1, 2, 3].map((number) => <button key={number} className={page === number ? "active" : ""} onClick={() => setPage(number)}>{number}</button>)}<button onClick={() => setPage((value) => Math.min(3, value + 1))}>›</button></div></div></section>;
-}
-
-function ReportView({ service }: { service: Service }) {
+function ReportView({ service, tableCallbacks }: { service: Service; tableCallbacks?: TableCallbacks }) {
   return <div className="view-stack"><SectionHeader eyebrow={`RAPORLAR · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="10 Temmuz–8 Ağustos 2026" actions={<><FilterDropdown kind="report" /><button className="secondary-button"><CalendarClock size={16} /> Son 30 gün</button><button className="primary-button"><FileText size={16} /> Dışa aktar</button></>} />
     <div className="dashboard-grid"><section className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">ZAMAN SERİSİ</p><h2>{service.id === "report-sensors" ? "Sıcaklık ve nem eğrisi" : service.id === "report-pir" ? "Hareket algılama yoğunluğu" : "Dönemsel değişim"}</h2></div></div><div className="rechart-frame"><ResponsiveContainer width="100%" height="100%"><LineChart data={DASHBOARD_TRENDS.general} margin={{ top: 10, right: 8, left: -24, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 6" /><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)" }} /><Line type="monotone" dataKey="primary" name="Kayıt" stroke="var(--chart-blue)" strokeWidth={3} dot={{ r: 4, fill: "var(--surface)", strokeWidth: 2 }} activeDot={{ r: 6 }} /><Line type="monotone" dataKey="secondary" name="Karşılaştırma" stroke="var(--chart-violet)" strokeWidth={2} strokeDasharray="6 5" dot={false} /></LineChart></ResponsiveContainer></div></section><section className="panel distribution-card"><div className="panel-heading"><div><p className="eyebrow">DAĞILIM</p><h2>{service.id.includes("alarm") ? "Öncelik" : "Konum"}</h2></div></div><HorizontalBreakdown items={[{ label: "A Blok", value: 4820, tone: "blue" }, { label: "B Blok", value: 3740, tone: "teal" }, { label: "C Blok", value: 2860, tone: "violet" }, { label: "Diğer", value: 1940, tone: "amber" }]} /><div className="report-kpi-row"><div><span>Kayıt</span><strong>14.820</strong></div><div><span>Değişim</span><strong className="positive-text">+%8,4</strong></div></div></section></div>
-    <DataTable service={service} />
+    <DataTable key={service.id} model={getTableModel(service)} {...tableCallbacks} />
   </div>;
 }
 
@@ -872,20 +1138,35 @@ function BuilderView({ service }: { service: Service }) {
   </div>;
 }
 
-function ApprovalView({ service }: { service: Service }) {
-  return <div className="view-stack"><SectionHeader eyebrow={`İŞ SÜREÇLERİ · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} actions={<button className="secondary-button"><RefreshCw size={16} /> Yenile</button>} /><section className="panel approval-empty"><span><CheckCircle2 size={30} /></span><h2>Onay bekleyen talep yok</h2><p>Tüm talepler sonuçlandırıldı.</p><button className="secondary-button">Tamamlananları görüntüle</button></section></div>;
-}
-
-function ServiceView({ service }: { service: Service }) {
+function ServiceView({ service, onColumns, onExport, onNotice }: { service: Service } & TableCallbacks) {
   if (["live", "emergency", "summary", "alarm-dashboard", "active-tasks"].includes(service.id)) return <MonitoringView id={service.id as "live" | "emergency" | "summary" | "alarm-dashboard" | "active-tasks"} />;
-  if (service.id === "live" || service.id === "maps" || service.id === "report-heatmap") return <LiveView />;
+  if (service.id === "maps") return <MapManagementView />;
+  if (service.id === "dashboard-management") return <DashboardManagementView />;
+  if (service.id === "time-matching") return <TimeMatchingView />;
+  if (service.id === "time-approval") return <TimeApprovalView />;
+  if (service.id === "time-report") return <TimeReportView onColumns={onColumns} onExport={onExport} onNotice={onNotice} />;
+  if (service.id === "live" || service.id === "report-heatmap") return <LiveView />;
   if (service.id === "emergency") return <LiveView emergency />;
-  if (service.id === "time-approval") return <ApprovalView service={service} />;
-  if (service.type === "dashboard") return <DashboardView service={service} />;
-  if (service.type === "report") return <ReportView service={service} />;
+  const tableCallbacks = { onColumns, onExport, onNotice };
+  if (service.type === "dashboard") return <DashboardView service={service} tableCallbacks={tableCallbacks} />;
+  if (service.type === "report") return <ReportView service={service} tableCallbacks={tableCallbacks} />;
   if (service.type === "builder") return <BuilderView service={service} />;
+  if (CONFIGURATION_MANAGEMENT_SERVICES.includes(service.id as typeof CONFIGURATION_MANAGEMENT_SERVICES[number])) {
+    const notifier = service.id === "alarm-notifiers";
+    return <div className="view-stack"><SectionHeader eyebrow="YÖNETİM" title={CONFIGURATION_MANAGEMENT_TITLES[service.id]} actions={<>{notifier ? <button className="secondary-button"><Settings size={16} /> Ayarlar</button> : null}<button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><DataTable key={service.id} model={getTableModel(service)} showExport={service.id !== "tags"} {...tableCallbacks} /></div>;
+  }
+  if (OPERATION_MANAGEMENT_SERVICES.includes(service.id as typeof OPERATION_MANAGEMENT_SERVICES[number])) {
+    const attendance = service.id === "attendance";
+    const contractor = service.id === "contractor-works";
+    return <div className="view-stack"><SectionHeader eyebrow="YÖNETİM" title={OPERATION_MANAGEMENT_TITLES[service.id]} actions={<>{attendance ? <><button className="secondary-button" onClick={() => onNotice?.("İzin ve mazeret tipleri açıldı")}>İzin & Mazeret Tipleri</button><button className="secondary-button">İzin & Mazeret Ekle</button><button className="secondary-button">Tanım Ekle</button><button className="primary-button" onClick={() => onNotice?.("Mesai kayıtları açıldı")}>Mesai Kayıtları</button></> : <>{contractor ? <button className="secondary-button" onClick={() => onNotice?.("Alt yüklenici ayarları açıldı")}><Settings size={16} /> Ayarlar</button> : null}<button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>}</>} /><DataTable key={service.id} model={getTableModel(service)} showExport={service.id !== "risk-factors"} {...tableCallbacks} /></div>;
+  }
+  if (CORE_MANAGEMENT_SERVICES.includes(service.id as typeof CORE_MANAGEMENT_SERVICES[number])) {
+    const supportsBulkImport = ["personnels", "personnel-groups", "personnel-devices", "visitor-devices", "equipment-devices"].includes(service.id);
+    const isVisitorList = service.id === "visitors";
+    return <div className="view-stack"><SectionHeader eyebrow={(CORE_MANAGEMENT_SECTIONS[service.id] ?? "Yönetim").toLocaleUpperCase("tr")} title={service.title} actions={<>{isVisitorList ? <FilterDropdown kind="general" /> : null}{supportsBulkImport ? <button className="secondary-button"><FileText size={16} /> Toplu İçe Aktar</button> : null}{service.id === "wifi-devices" ? <button className="secondary-button"><Activity size={16} /> RSSI Testi</button> : null}{service.id === "sensors" ? <button className="secondary-button"><Plus size={16} /> ToF Sensörü Ekle</button> : null}<button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><DataTable key={service.id} model={getTableModel(service)} showExport {...tableCallbacks} /></div>;
+  }
   const metrics = getServiceSummary(service);
-  return <div className="view-stack"><SectionHeader eyebrow={getGroupLabel(service.group).toUpperCase()} title={service.title} actions={<><FilterDropdown kind="general" /><button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><section className="summary-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <div key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={19} /></span><p><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.detail}</em></p></div>; })}</section><DataTable service={service} /></div>;
+  return <div className="view-stack"><SectionHeader eyebrow={getGroupLabel(service.group).toLocaleUpperCase("tr")} title={service.title} actions={<><FilterDropdown kind="general" /><button className="primary-button"><Plus size={16} /> {getCreateLabel(service)}</button></>} /><section className="summary-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <div key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={19} /></span><p><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.detail}</em></p></div>; })}</section><DataTable key={service.id} model={getTableModel(service)} {...tableCallbacks} /></div>;
 }
 
 function CommandPalette({ close, openService, openCatalog }: { close: () => void; openService: (id: string) => void; openCatalog: () => void }) {
@@ -979,7 +1260,7 @@ export function NavbeaApp() {
   const activeRootId = SIDEBAR_TREE.find((node) => nodeContainsService(node, activeId))?.id;
   const flyoutNode = SIDEBAR_TREE.find((node) => node.id === flyoutId);
   const toggleTabPin = (id: string) => setPinnedTabIds((current) => {
-    const next = current.includes(id) ? current.filter((item) => item !== id) : [id, ...current];
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
     window.localStorage.setItem("navbea:pinned-tabs", JSON.stringify(next));
     return next;
   });
@@ -992,19 +1273,25 @@ export function NavbeaApp() {
     setToast(message);
     window.setTimeout(() => setToast(""), 2400);
   };
-  const exportTable = () => {
-    const blob = new Blob([`ID,Ad,Konum,Durum\\nNV-2048,Ana Bina,${WORKSPACE_NAME},Aktif\\nNV-2047,C Blok,${WORKSPACE_NAME},Aktif`], { type: "text/csv;charset=utf-8" });
+  const exportTable = (service = activeService) => {
+    if (!service) return;
+    const model = getTableModel(service);
+    const escapeCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
+    const csv = [model.columns.filter((column) => column !== "Eylemler"), ...model.rows]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "navbea-kayitlari.csv";
+    anchor.download = `${service.id}-kayitlari.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
     notify("CSV dosyası indirildi");
   };
   const handleAppAction = (event: React.MouseEvent<HTMLDivElement>) => {
     const button = (event.target as HTMLElement).closest("button");
-    if (!button || button.closest(".main-nav, .workspace-tabs, .command-popover, .filter-dropdown, .catalog-tabs, .group-grid, .recent-grid, .work-list")) return;
+    if (!button || button.closest(".main-nav, .workspace-tabs, .command-popover, .filter-dropdown, .catalog-tabs, .group-grid, .recent-grid, .work-list, .data-panel, .self-managed-view")) return;
     const label = (button.getAttribute("aria-label") || button.textContent || "").trim().replace(/\s+/g, " ");
     if (!label) return;
     if (/^(Yeni görev|Bileşen ekle|Adım ekle)$/.test(label) || /^(Yeni |.* (ekle|oluştur)$)/.test(label)) {
@@ -1044,7 +1331,7 @@ export function NavbeaApp() {
     <main className="app-shell">
       <header className="topbar"><IconButton label="Mobil menü" onClick={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }}><Menu size={19} /></IconButton><button className="global-search" onClick={() => setPaletteOpen(true)}><Search size={18} /><span>Sayfa, kişi, cihaz veya rapor ara…</span><kbd>⌘ K</kbd></button><div className="top-actions"><StatusPill tone="success">Bağlantı aktif</StatusPill><IconButton label="Bildirimler"><Bell size={19} /><span className="notification-dot">3</span></IconButton><IconButton label={theme === "light" ? "Koyu moda geç" : "Açık moda geç"} onClick={() => setTheme((value) => value === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={19} /> : <Sun size={19} />}</IconButton><div className="top-user"><span className="avatar">AS</span><span><strong>Admin</strong><small>{WORKSPACE_NAME}</small></span></div></div></header>
       <div className="workspace-tabs" role="tablist" aria-label="Açık çalışma sekmeleri">{orderedTabs.map((id) => { const TabIcon = getIcon(id); const pinned = pinnedTabIds.includes(id); return <div className={`workspace-tab ${activeId === id ? "active" : ""} ${pinned ? "pinned" : ""}`} key={id}><button className="tab-main" role="tab" aria-selected={activeId === id} onClick={() => setActiveId(id)}><TabIcon size={15} /><span>{getLabel(id)}</span></button>{id !== "home" ? <><button className="tab-pin" aria-label={pinned ? `${getLabel(id)} sekmesinin sabitlemesini kaldır` : `${getLabel(id)} sekmesini sabitle`} aria-pressed={pinned} title={pinned ? "Sabitlemeyi kaldır" : "Sekmeyi sabitle"} onClick={() => toggleTabPin(id)}><Pin size={12} /></button><button className="tab-close" aria-label={`${getLabel(id)} sekmesini kapat`} onClick={() => closeTab(id)}><X size={13} /></button></> : null}</div>; })}<button className="new-tab" aria-label="Modül dizinini aç" onClick={() => openCatalog()}><Plus size={15} /></button></div>
-      <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeService ? <ServiceView service={activeService} /> : null}</div>
+      <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeService ? <ServiceView service={activeService} onColumns={() => setActionDialog({ mode: "columns", label: "Sütunlar", serviceId: activeService.id })} onExport={() => exportTable(activeService)} onNotice={notify} /> : null}</div>
     </main>
     {paletteOpen ? <CommandPalette close={() => setPaletteOpen(false)} openService={openService} openCatalog={() => openCatalog()} /> : null}
     {actionDialog ? <ActionDialog state={actionDialog} close={() => setActionDialog(null)} confirm={(message) => { setActionDialog(null); notify(message); }} /> : null}

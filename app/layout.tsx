@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import "@fontsource-variable/manrope";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,7 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     metadataBase: new URL(origin),
     icons: {
-      icon: "/navbea-icon.png",
+      icon: [{ url: "/favicon.svg?v=2", type: "image/svg+xml" }],
+      shortcut: "/favicon.svg?v=2",
       apple: "/navbea-icon.png",
     },
     openGraph: {
@@ -53,7 +55,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="tr">
-      <body>{children}</body>
+      <body className={`${GeistSans.variable} ${GeistMono.variable}`}>{children}</body>
     </html>
   );
 }
