@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { MonitoringView } from "./MonitoringViews";
 import {
   Area,
   AreaChart,
@@ -111,7 +112,7 @@ const GROUPS = [
 const SERVICES: Service[] = [
   { id: "live", title: "Canlı İzleme", group: "İzleme", description: "Personel, ekipman ve misafirleri harita üzerinde izleyin.", icon: Radio, type: "map", status: "Canlı" },
   { id: "emergency", title: "Acil Durum", group: "İzleme", description: "Toplanma bölgelerini ve kişi durumlarını yönetin.", icon: ShieldAlert, type: "dashboard" },
-  { id: "summary", title: "Konum Yönetim Paneli", group: "İzleme", description: "Konumlar, katlar ve anlık saha değerleri.", icon: Gauge, type: "dashboard" },
+  { id: "summary", title: "Konum Özeti", group: "İzleme", description: "Konumlar, katlar ve anlık saha değerleri.", icon: Gauge, type: "dashboard" },
   { id: "alarm-dashboard", title: "Alarm Özeti", group: "İzleme", description: "Alarm dağılımları, kaynakları ve son olaylar.", icon: Bell, type: "dashboard" },
   { id: "active-tasks", title: "Aktif Görevler", group: "İzleme", description: "Sahadaki açık görevleri ve sorumluları takip edin.", icon: ClipboardCheck, type: "table" },
   { id: "maps", title: "Haritalar", group: "İzleme", description: "2D/3D haritaları, katları ve nesneleri yönetin.", icon: Map, type: "map" },
@@ -733,24 +734,30 @@ function FilterDropdown({ kind = "general" }: { kind?: "home" | "shell" | "tool"
 
 function DashboardTrendChart({ variant }: { variant: "shell" | "tool" | "alarm" | "general" }) {
   const data = DASHBOARD_TRENDS[variant];
-  return <div className="rechart-frame" role="img" aria-label="Son yedi günlük operasyon eğilimi">
-    <ResponsiveContainer width="100%" height="100%">
+  const primaryLabel = variant === "shell" ? "Ortalama doluluk" : variant === "alarm" ? "Alarm" : variant === "tool" ? "Kullanımda" : "Operasyon";
+  const secondaryLabel = variant === "shell" ? "Düşük seviye" : variant === "alarm" ? "Kritik" : variant === "tool" ? "Bakım / gecikme" : "Bekleyen";
+  return <div className="dashboard-trend-visual" role="img" aria-label="Son yedi günlük operasyon eğilimi">
+    <div className="rechart-frame">
+      <ResponsiveContainer width="100%" height="100%">
       {variant === "tool" ? <BarChart data={data} margin={{ top: 10, right: 8, left: -22, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 6" />
         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 11 }} />
         <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 10 }} />
         <Tooltip cursor={{ fill: "var(--surface-soft)" }} contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)" }} />
-        <Bar dataKey="primary" name="Kullanımda" fill="var(--chart-blue)" radius={[7, 7, 2, 2]} maxBarSize={34} />
-        <Bar dataKey="secondary" name="Bakım / gecikme" fill="var(--chart-amber)" radius={[7, 7, 2, 2]} maxBarSize={22} />
+        <Bar dataKey="primary" name={primaryLabel} fill="var(--chart-blue)" radius={[7, 7, 2, 2]} maxBarSize={34} />
+        <Bar dataKey="secondary" name={secondaryLabel} fill="var(--chart-amber)" radius={[7, 7, 2, 2]} maxBarSize={22} />
       </BarChart> : <AreaChart data={data} margin={{ top: 10, right: 8, left: -24, bottom: 0 }}>
         <defs><linearGradient id={`trend-${variant}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={variant === "alarm" ? "var(--chart-coral)" : "var(--chart-teal)"} stopOpacity={0.32} /><stop offset="100%" stopColor={variant === "alarm" ? "var(--chart-coral)" : "var(--chart-teal)"} stopOpacity={0.02} /></linearGradient></defs>
         <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 6" />
         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 11 }} />
         <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 10 }} />
         <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)" }} />
-        <Area type="monotone" dataKey="primary" name={variant === "shell" ? "Ortalama doluluk" : variant === "alarm" ? "Alarm" : "Operasyon"} stroke={variant === "alarm" ? "var(--chart-coral)" : "var(--chart-teal)"} strokeWidth={3} fill={`url(#trend-${variant})`} />
+        <Area type="monotone" dataKey="primary" name={primaryLabel} stroke={variant === "alarm" ? "var(--chart-coral)" : "var(--chart-teal)"} strokeWidth={3} fill={`url(#trend-${variant})`} />
+        <Line type="monotone" dataKey="secondary" name={secondaryLabel} stroke="var(--chart-amber)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3, fill: "var(--surface)" }} />
       </AreaChart>}
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </div>
+    <div className="chart-inline-legend"><span><i className={variant === "alarm" ? "coral" : variant === "tool" ? "blue" : "teal"} />{primaryLabel}</span><span><i className="amber" />{secondaryLabel}</span></div>
   </div>;
 }
 
@@ -785,7 +792,7 @@ function MiniMap({ emergency = false }: { emergency?: boolean }) {
 function HomeView({ openService, openCatalog, recentIds }: { openService: (id: string) => void; openCatalog: (group?: string) => void; recentIds: string[] }) {
   return <div className="view-stack">
     <SectionHeader eyebrow={`${WORKSPACE_NAME.toUpperCase()} · 8 AĞUSTOS 2026, CUMARTESİ`} title="Operasyon Merkezi" description="Son güncelleme 15:42" actions={<><FilterDropdown kind="home" /><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button" onClick={() => openService("active-tasks")}><Plus size={17} /> Yeni görev</button></>} />
-    <section className="asset-overview" aria-label="Canlı varlık özeti">{HOME_ASSET_SUMMARY.map(({ label, value, icon: AssetIcon, tone, serviceId }) => <button key={label} onClick={() => openService(serviceId)}><span className={`metric-icon ${tone}`}><AssetIcon size={18} /></span><span><small>{label}</small><strong>{value}</strong></span><ChevronRight size={14} /></button>)}</section>
+    <section className="panel home-summary-panel" aria-label="Canlı varlık özeti"><div className="home-summary-heading"><div><p className="eyebrow">CANLI DURUM</p><h2>Varlık özeti</h2></div><span><Radio size={13} /> Son veri 15:42:18</span></div><div className="asset-overview">{HOME_ASSET_SUMMARY.map(({ label, value, icon: AssetIcon, tone, serviceId }) => <button key={label} onClick={() => openService(serviceId)}><span className={`metric-icon ${tone}`}><AssetIcon size={18} /></span><span><small>{label}</small><strong>{value}</strong></span><ChevronRight size={14} /></button>)}</div></section>
 
     <div className="home-grid">
       <section className="panel work-panel">
@@ -832,8 +839,8 @@ function DashboardView({ service }: { service: Service }) {
   if (service.id === "shell-dashboard") return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<><FilterDropdown kind="general" /><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></>} /><section className="panel dashboard-empty"><span className="metric-icon violet"><LayoutDashboard size={24} /></span><h2>Henüz veri bileşeni yok</h2><p>Bu panoya gösterge, grafik veya tablo ekleyin.</p><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></section></div>;
   const trendVariant = shell ? "shell" : tool ? "tool" : alarm ? "alarm" : "general";
   return <div className="view-stack"><SectionHeader eyebrow={`${getGroupLabel(service.group).toUpperCase()} · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="Son güncelleme 15:42" actions={<><FilterDropdown kind={shell ? "shell" : tool ? "tool" : "general"} /><button className="secondary-button"><RefreshCw size={16} /> Yenile</button><button className="primary-button"><Plus size={16} /> Bileşen ekle</button></>} />
-    <section className="metric-grid">{metrics.map((metric) => { const MetricIcon = metric.icon; return <article className="metric-card" key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={20} /></span><div><small>{metric.label}</small><strong>{metric.value}</strong><span className="trend">{metric.detail}</span></div></article>; })}</section>
-    <div className="dashboard-grid"><section className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">SON 7 GÜN</p><h2>{shell ? "Doluluk değişimi" : alarm ? "Alarm yoğunluğu" : tool ? "Ekipman kullanımı" : "Operasyon trendi"}</h2></div><StatusPill tone="success">Güncel</StatusPill></div><DashboardTrendChart variant={trendVariant} /></section><section className="panel distribution-card"><div className="panel-heading"><div><p className="eyebrow">DURUM DAĞILIMI</p><h2>{shell ? "Doluluk dağılımı" : "Anlık sağlık"}</h2></div></div><DistributionDonut shell={shell} /></section></div>
+    <section className="metric-grid dashboard-metric-strip">{metrics.map((metric) => { const MetricIcon = metric.icon; return <article className="metric-card" key={metric.label}><span className={`metric-icon ${metric.tone}`}><MetricIcon size={20} /></span><div><small>{metric.label}</small><strong>{metric.value}</strong><span className="trend">{metric.detail}</span></div></article>; })}</section>
+    <div className={`dashboard-grid dashboard-grid-${trendVariant}`}><section className="panel chart-card dashboard-primary-chart"><div className="panel-heading"><div><p className="eyebrow">SON 7 GÜN</p><h2>{shell ? "Doluluk değişimi" : alarm ? "Alarm yoğunluğu" : tool ? "Ekipman kullanımı" : "Operasyon trendi"}</h2></div><StatusPill tone="success">Güncel</StatusPill></div><DashboardTrendChart variant={trendVariant} /></section><section className="panel distribution-card dashboard-distribution"><div className="panel-heading"><div><p className="eyebrow">DURUM DAĞILIMI</p><h2>{shell ? "Doluluk dağılımı" : "Anlık sağlık"}</h2></div></div><DistributionDonut shell={shell} /></section></div>
     <div className="visual-insight-grid"><section className="panel compact-chart-card"><div><p className="eyebrow">KAYNAK DAĞILIMI</p><h2>{shell ? "Seviye bantları" : alarm ? "Alarm tipleri" : tool ? "Kullanım durumu" : "Alan yükü"}</h2></div><HorizontalBreakdown items={breakdown} /></section><section className="panel compact-chart-card"><div><p className="eyebrow">SAATLİK HAREKET</p><h2>Gün içi yoğunluk</h2></div><CompactBars values={shell ? [22,28,35,49,71,66,52,43,37,29,24,18] : [18,25,36,61,82,76,68,72,57,46,31,22]} tone={alarm ? "coral" : shell ? "teal" : "violet"} label="Gün içindeki saatlik yoğunluk dağılımı" /></section></div>
     <DataTable service={service} />
   </div>;
@@ -870,6 +877,7 @@ function ApprovalView({ service }: { service: Service }) {
 }
 
 function ServiceView({ service }: { service: Service }) {
+  if (["live", "emergency", "summary", "alarm-dashboard", "active-tasks"].includes(service.id)) return <MonitoringView id={service.id as "live" | "emergency" | "summary" | "alarm-dashboard" | "active-tasks"} />;
   if (service.id === "live" || service.id === "maps" || service.id === "report-heatmap") return <LiveView />;
   if (service.id === "emergency") return <LiveView emergency />;
   if (service.id === "time-approval") return <ApprovalView service={service} />;
