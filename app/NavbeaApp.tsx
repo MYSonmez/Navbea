@@ -9,6 +9,7 @@ import { IconButton, SectionHeader, StatusPill } from "../components/navbea/Ui";
 import { MapManagementView } from "../components/navbea/MapManagementView";
 import { DashboardManagementView } from "../components/navbea/DashboardManagementView";
 import { TimeApprovalView, TimeMatchingView, TimeReportView } from "../components/navbea/TimeDistributionViews";
+import { MarketplaceView } from "../components/navbea/MarketplaceView";
 import {
   Area,
   AreaChart,
@@ -73,6 +74,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Store,
   Sun,
   Tag,
   ThermometerSun,
@@ -1209,7 +1211,7 @@ export function NavbeaApp() {
         try {
           const parsedPins = JSON.parse(savedPins);
           const validPins = Array.isArray(parsedPins)
-            ? parsedPins.filter((id): id is string => typeof id === "string" && (id === "catalog" || SERVICES.some((service) => service.id === id)))
+            ? parsedPins.filter((id): id is string => typeof id === "string" && (["catalog", "marketplace"].includes(id) || SERVICES.some((service) => service.id === id)))
             : [];
           setPinnedTabIds(validPins);
           setTabs((current) => ["home", ...validPins, ...current.filter((id) => id !== "home" && !validPins.includes(id))]);
@@ -1227,6 +1229,11 @@ export function NavbeaApp() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeId]);
 
   const openService = (id: string) => {
     const path = findSidebarPath(SIDEBAR_TREE, id);
@@ -1254,8 +1261,8 @@ export function NavbeaApp() {
     window.localStorage.setItem("navbea:pinned-tabs", JSON.stringify(nextPins));
     if (activeId === id) setActiveId(safe[safe.length - 1]);
   };
-  const getLabel = (id: string) => id === "home" ? "Ana Sayfa" : id === "catalog" ? "Tüm Hizmetler" : SERVICES.find((service) => service.id === id)?.title ?? id;
-  const getIcon = (id: string): LucideIcon => id === "home" ? Home : id === "catalog" ? Grid2X2 : SERVICES.find((service) => service.id === id)?.icon ?? FileText;
+  const getLabel = (id: string) => id === "home" ? "Ana Sayfa" : id === "catalog" ? "Tüm Hizmetler" : id === "marketplace" ? "Marketplace" : SERVICES.find((service) => service.id === id)?.title ?? id;
+  const getIcon = (id: string): LucideIcon => id === "home" ? Home : id === "catalog" ? Grid2X2 : id === "marketplace" ? Store : SERVICES.find((service) => service.id === id)?.icon ?? FileText;
   const activeService = SERVICES.find((service) => service.id === activeId);
   const activeRootId = SIDEBAR_TREE.find((node) => nodeContainsService(node, activeId))?.id;
   const flyoutNode = SIDEBAR_TREE.find((node) => node.id === flyoutId);
@@ -1322,7 +1329,7 @@ export function NavbeaApp() {
           <span className="rail-divider" />
           {SIDEBAR_TREE.map((node, index) => { const RailIcon = node.icon; const active = activeRootId === node.id; return <button key={node.id} className={`rail-link rail-tone-${index % 6} ${active ? "active" : ""} ${flyoutId === node.id ? "open" : ""}`} aria-expanded={flyoutId === node.id} aria-controls="navigation-flyout" onMouseEnter={() => setFlyoutId(node.id)} onFocus={() => setFlyoutId(node.id)} onClick={() => setFlyoutId((current) => current === node.id ? null : node.id)} title={node.label}><RailIcon size={20} /><span className="rail-tooltip">{node.label}</span>{node.id === "monitoring" ? <i className="rail-live-dot" /> : null}</button>; })}
         </nav>
-        <div className="rail-bottom"><button className={`rail-link ${activeId === "wizard" ? "active" : ""}`} onClick={() => openService("wizard")} title="Kurulum Sihirbazı"><Sparkles size={20} /><span className="rail-tooltip">Kurulum Sihirbazı</span></button><button className="rail-avatar" aria-label="Hesap ayarları" title="Admin hesabı">AS</button></div>
+        <div className="rail-bottom"><button className={`rail-link rail-marketplace ${activeId === "marketplace" ? "active" : ""}`} onClick={() => openService("marketplace")} title="Marketplace"><Store size={20} /><span className="rail-tooltip">Marketplace</span><i className="marketplace-dot" /></button><button className={`rail-link ${activeId === "wizard" ? "active" : ""}`} onClick={() => openService("wizard")} title="Kurulum Sihirbazı"><Sparkles size={20} /><span className="rail-tooltip">Kurulum Sihirbazı</span></button><button className="rail-avatar" aria-label="Hesap ayarları" title="Admin hesabı">AS</button></div>
       </div>
       {flyoutNode ? <section className="nav-flyout" id="navigation-flyout" aria-label={`${flyoutNode.label} menüsü`}><div className="flyout-heading"><span className={`flyout-group-icon ${getGroupColor(SERVICES.find((service) => nodeContainsService(flyoutNode, service.id))?.group ?? "İzleme")}`}><flyoutNode.icon size={20} /></span><div><small>ÇALIŞMA ALANI</small><h2>{flyoutNode.label}</h2></div><IconButton label="Menüyü kapat" onClick={() => setFlyoutId(null)}><X size={16} /></IconButton></div><div className="flyout-tree">{flyoutNode.children?.map((child) => <SidebarTreeItem key={child.id} node={child} level={0} activeId={activeId} expandedNodes={expandedNodes} toggleNode={toggleNode} openService={openService} />)}</div><button className="flyout-directory" onClick={() => openCatalog()}><Grid2X2 size={16} /> Tüm modülleri görüntüle <ChevronRight size={15} /></button></section> : null}
     </aside>
@@ -1331,7 +1338,7 @@ export function NavbeaApp() {
     <main className="app-shell">
       <header className="topbar"><IconButton label="Mobil menü" onClick={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }}><Menu size={19} /></IconButton><button className="global-search" onClick={() => setPaletteOpen(true)}><Search size={18} /><span>Sayfa, kişi, cihaz veya rapor ara…</span><kbd>⌘ K</kbd></button><div className="top-actions"><StatusPill tone="success">Bağlantı aktif</StatusPill><IconButton label="Bildirimler"><Bell size={19} /><span className="notification-dot">3</span></IconButton><IconButton label={theme === "light" ? "Koyu moda geç" : "Açık moda geç"} onClick={() => setTheme((value) => value === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={19} /> : <Sun size={19} />}</IconButton><div className="top-user"><span className="avatar">AS</span><span><strong>Admin</strong><small>{WORKSPACE_NAME}</small></span></div></div></header>
       <div className="workspace-tabs" role="tablist" aria-label="Açık çalışma sekmeleri">{orderedTabs.map((id) => { const TabIcon = getIcon(id); const pinned = pinnedTabIds.includes(id); return <div className={`workspace-tab ${activeId === id ? "active" : ""} ${pinned ? "pinned" : ""}`} key={id}><button className="tab-main" role="tab" aria-selected={activeId === id} onClick={() => setActiveId(id)}><TabIcon size={15} /><span>{getLabel(id)}</span></button>{id !== "home" ? <><button className="tab-pin" aria-label={pinned ? `${getLabel(id)} sekmesinin sabitlemesini kaldır` : `${getLabel(id)} sekmesini sabitle`} aria-pressed={pinned} title={pinned ? "Sabitlemeyi kaldır" : "Sekmeyi sabitle"} onClick={() => toggleTabPin(id)}><Pin size={12} /></button><button className="tab-close" aria-label={`${getLabel(id)} sekmesini kapat`} onClick={() => closeTab(id)}><X size={13} /></button></> : null}</div>; })}<button className="new-tab" aria-label="Modül dizinini aç" onClick={() => openCatalog()}><Plus size={15} /></button></div>
-      <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeService ? <ServiceView service={activeService} onColumns={() => setActionDialog({ mode: "columns", label: "Sütunlar", serviceId: activeService.id })} onExport={() => exportTable(activeService)} onNotice={notify} /> : null}</div>
+      <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeId === "marketplace" ? <MarketplaceView onOpenService={openService} onNotice={notify} /> : activeService ? <ServiceView service={activeService} onColumns={() => setActionDialog({ mode: "columns", label: "Sütunlar", serviceId: activeService.id })} onExport={() => exportTable(activeService)} onNotice={notify} /> : null}</div>
     </main>
     {paletteOpen ? <CommandPalette close={() => setPaletteOpen(false)} openService={openService} openCatalog={() => openCatalog()} /> : null}
     {actionDialog ? <ActionDialog state={actionDialog} close={() => setActionDialog(null)} confirm={(message) => { setActionDialog(null); notify(message); }} /> : null}

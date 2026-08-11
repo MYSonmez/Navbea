@@ -67,7 +67,7 @@ test("standard Next.js server renders the Navbea application", async () => {
 });
 
 test("contains the complete service tree and no Vinext runtime", async () => {
-  const [app, css, layout, packageSource, nextEnv, dataTable, sharedUi, sidebarTree, mapManagement, dashboardManagement, timeDistribution, favicon] = await Promise.all([
+  const [app, css, layout, packageSource, nextEnv, dataTable, sharedUi, sidebarTree, mapManagement, dashboardManagement, timeDistribution, marketplace, favicon] = await Promise.all([
     readFile(new URL("../app/NavbeaApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
@@ -79,6 +79,7 @@ test("contains the complete service tree and no Vinext runtime", async () => {
     readFile(new URL("../components/navbea/MapManagementView.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/DashboardManagementView.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/TimeDistributionViews.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/MarketplaceView.tsx", import.meta.url), "utf8"),
     readFile(new URL("../public/favicon.svg", import.meta.url), "utf8"),
   ]);
 
@@ -110,6 +111,7 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(app, /setTabs\(\(current\) => \["home", \.\.\.validPins/);
   assert.doesNotMatch(app, /Sabitlenenler/);
   assert.match(app, /className="filter-dropdown"/);
+  assert.match(app, /window\.scrollTo\(\{ top: 0/);
   assert.match(css, /\.filter-popover/);
   assert.equal(packageJson.dependencies.recharts.startsWith("^"), true);
   assert.match(app, /getTableModel/);
@@ -144,6 +146,22 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(timeDistribution, /export function TimeMatchingView/);
   assert.match(timeDistribution, /export function TimeApprovalView/);
   assert.match(timeDistribution, /export function TimeReportView/);
+  assert.match(timeDistribution, /Atama oluştur/);
+  assert.match(timeDistribution, /Eşleştirme durumu/);
+  assert.match(timeDistribution, /Liste filtreleri/);
+  assert.match(timeDistribution, /Aktif filtreler/);
+  assert.match(timeDistribution, /Atamayı uygula/);
+  assert.match(timeDistribution, /Gelişmiş filtreler/);
+  assert.match(timeDistribution, /Eksikleri göster/);
+  assert.match(timeDistribution, /Onaya gönder/);
+  assert.match(timeDistribution, /undoLastAssignment/);
+  assert.match(app, /activeId === "marketplace"/);
+  assert.match(app, /rail-marketplace/);
+  assert.match(marketplace, /Akıllı Alan Kullanımı/);
+  assert.match(marketplace, /Acil Durum ve Toplanma/);
+  assert.match(marketplace, /Ekipman ve El Aleti Takibi/);
+  assert.match(marketplace, /Hijyen ve Sarf Doluluk Takibi/);
+  assert.match(marketplace, /Mesai ve Görev Süresi Uyumu/);
   assert.match(favicon, /#315FDF/);
   assert.match(css, /input:focus-visible/);
 });
