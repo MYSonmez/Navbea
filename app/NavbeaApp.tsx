@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { MonitoringView } from "./MonitoringViews";
 import { DataTable, type TableModel } from "../components/navbea/DataTable";
-import { SidebarTreeItem, type SidebarNode } from "../components/navbea/SidebarTree";
+import type { SidebarNode } from "../components/navbea/SidebarTree";
 import { IconButton, SectionHeader, StatusPill } from "../components/navbea/Ui";
 import { MapManagementView } from "../components/navbea/MapManagementView";
 import { DashboardManagementView } from "../components/navbea/DashboardManagementView";
 import { TimeApprovalView, TimeMatchingView, TimeReportView } from "../components/navbea/TimeDistributionViews";
 import { MarketplaceView } from "../components/navbea/MarketplaceView";
+import { NavbeaReportView } from "../components/navbea/ReportViews";
+import { AndonSpine } from "../components/navbea/shell/AndonSpine";
+import { AppToast } from "../components/navbea/shell/AppToast";
+import { NavigationShell } from "../components/navbea/shell/NavigationShell";
+import { TopBar } from "../components/navbea/shell/TopBar";
+import { WorkspaceTabs, type WorkspaceTabItem } from "../components/navbea/shell/WorkspaceTabs";
 import {
   Area,
   AreaChart,
@@ -18,7 +23,6 @@ import {
   CartesianGrid,
   Cell,
   Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -56,14 +60,11 @@ import {
   LayoutDashboard,
   Map,
   MapPin,
-  Menu,
   MessageSquareText,
   MonitorDot,
-  Moon,
   MoreHorizontal,
   Network,
   PackageSearch,
-  Pin,
   Plus,
   Radio,
   RefreshCw,
@@ -75,7 +76,6 @@ import {
   Smartphone,
   Sparkles,
   Store,
-  Sun,
   Tag,
   ThermometerSun,
   TimerReset,
@@ -1123,13 +1123,6 @@ function DashboardView({ service, tableCallbacks }: { service: Service; tableCal
   </div>;
 }
 
-function ReportView({ service, tableCallbacks }: { service: Service; tableCallbacks?: TableCallbacks }) {
-  return <div className="view-stack"><SectionHeader eyebrow={`RAPORLAR · ${WORKSPACE_NAME.toUpperCase()}`} title={service.title} description="10 Temmuz–8 Ağustos 2026" actions={<><FilterDropdown kind="report" /><button className="secondary-button"><CalendarClock size={16} /> Son 30 gün</button><button className="primary-button"><FileText size={16} /> Dışa aktar</button></>} />
-    <div className="dashboard-grid"><section className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">ZAMAN SERİSİ</p><h2>{service.id === "report-sensors" ? "Sıcaklık ve nem eğrisi" : service.id === "report-pir" ? "Hareket algılama yoğunluğu" : "Dönemsel değişim"}</h2></div></div><div className="rechart-frame"><ResponsiveContainer width="100%" height="100%"><LineChart data={DASHBOARD_TRENDS.general} margin={{ top: 10, right: 8, left: -24, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 6" /><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-soft)", fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--text)" }} /><Line type="monotone" dataKey="primary" name="Kayıt" stroke="var(--chart-blue)" strokeWidth={3} dot={{ r: 4, fill: "var(--surface)", strokeWidth: 2 }} activeDot={{ r: 6 }} /><Line type="monotone" dataKey="secondary" name="Karşılaştırma" stroke="var(--chart-violet)" strokeWidth={2} strokeDasharray="6 5" dot={false} /></LineChart></ResponsiveContainer></div></section><section className="panel distribution-card"><div className="panel-heading"><div><p className="eyebrow">DAĞILIM</p><h2>{service.id.includes("alarm") ? "Öncelik" : "Konum"}</h2></div></div><HorizontalBreakdown items={[{ label: "A Blok", value: 4820, tone: "blue" }, { label: "B Blok", value: 3740, tone: "teal" }, { label: "C Blok", value: 2860, tone: "violet" }, { label: "Diğer", value: 1940, tone: "amber" }]} /><div className="report-kpi-row"><div><span>Kayıt</span><strong>14.820</strong></div><div><span>Değişim</span><strong className="positive-text">+%8,4</strong></div></div></section></div>
-    <DataTable key={service.id} model={getTableModel(service)} {...tableCallbacks} />
-  </div>;
-}
-
 function BuilderView({ service }: { service: Service }) {
   const Icon = service.icon;
   const dynamicReport = service.id === "report-dynamic";
@@ -1147,11 +1140,11 @@ function ServiceView({ service, onColumns, onExport, onNotice }: { service: Serv
   if (service.id === "time-matching") return <TimeMatchingView />;
   if (service.id === "time-approval") return <TimeApprovalView />;
   if (service.id === "time-report") return <TimeReportView onColumns={onColumns} onExport={onExport} onNotice={onNotice} />;
-  if (service.id === "live" || service.id === "report-heatmap") return <LiveView />;
+  if (service.type === "report" || service.id === "report-heatmap" || service.id === "report-dynamic") return <NavbeaReportView id={service.id} title={service.title} onExport={onExport} onNotice={onNotice} />;
+  if (service.id === "live") return <LiveView />;
   if (service.id === "emergency") return <LiveView emergency />;
   const tableCallbacks = { onColumns, onExport, onNotice };
   if (service.type === "dashboard") return <DashboardView service={service} tableCallbacks={tableCallbacks} />;
-  if (service.type === "report") return <ReportView service={service} tableCallbacks={tableCallbacks} />;
   if (service.type === "builder") return <BuilderView service={service} />;
   if (CONFIGURATION_MANAGEMENT_SERVICES.includes(service.id as typeof CONFIGURATION_MANAGEMENT_SERVICES[number])) {
     const notifier = service.id === "alarm-notifiers";
@@ -1276,6 +1269,7 @@ export function NavbeaApp() {
     ...pinnedTabIds.filter((id) => id !== "home" && tabs.includes(id)),
     ...tabs.filter((id) => id !== "home" && !pinnedTabIds.includes(id)),
   ], [tabs, pinnedTabIds]);
+  const workspaceTabItems = useMemo<WorkspaceTabItem[]>(() => orderedTabs.map((id) => ({ id, label: getLabel(id), icon: getIcon(id), pinned: pinnedTabIds.includes(id), active: activeId === id })), [activeId, orderedTabs, pinnedTabIds]);
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2400);
@@ -1321,27 +1315,15 @@ export function NavbeaApp() {
   };
 
   return <div className="navbea-app" data-theme={theme} data-mobile-nav={mobileMenuOpen ? "open" : "closed"} onClickCapture={handleAppAction}>
-    <aside className="navigation-shell" onMouseLeave={() => setFlyoutId(null)}>
-      <div className="sidebar">
-        <button className="brand" aria-label="Ana sayfaya git" onClick={() => openService("home")}><Image className="brand-logo brand-logo-light" src="/logo-icon-light.svg" alt="Navbea" width={26} height={42} priority /><Image className="brand-logo brand-logo-dark" src="/logo-icon-dark.svg" alt="" aria-hidden="true" width={26} height={42} priority /></button>
-        <nav className="rail-nav" aria-label="Ana navigasyon">
-          <button className={`rail-link ${activeId === "home" ? "active" : ""}`} onClick={() => openService("home")} title="Ana Sayfa"><Home size={20} /><span className="rail-tooltip">Ana Sayfa</span></button>
-          <span className="rail-divider" />
-          {SIDEBAR_TREE.map((node, index) => { const RailIcon = node.icon; const active = activeRootId === node.id; return <button key={node.id} className={`rail-link rail-tone-${index % 6} ${active ? "active" : ""} ${flyoutId === node.id ? "open" : ""}`} aria-expanded={flyoutId === node.id} aria-controls="navigation-flyout" onMouseEnter={() => setFlyoutId(node.id)} onFocus={() => setFlyoutId(node.id)} onClick={() => setFlyoutId((current) => current === node.id ? null : node.id)} title={node.label}><RailIcon size={20} /><span className="rail-tooltip">{node.label}</span>{node.id === "monitoring" ? <i className="rail-live-dot" /> : null}</button>; })}
-        </nav>
-        <div className="rail-bottom"><button className={`rail-link rail-marketplace ${activeId === "marketplace" ? "active" : ""}`} onClick={() => openService("marketplace")} title="Marketplace"><Store size={20} /><span className="rail-tooltip">Marketplace</span><i className="marketplace-dot" /></button><button className={`rail-link ${activeId === "wizard" ? "active" : ""}`} onClick={() => openService("wizard")} title="Kurulum Sihirbazı"><Sparkles size={20} /><span className="rail-tooltip">Kurulum Sihirbazı</span></button><button className="rail-avatar" aria-label="Hesap ayarları" title="Admin hesabı">AS</button></div>
-      </div>
-      {flyoutNode ? <section className="nav-flyout" id="navigation-flyout" aria-label={`${flyoutNode.label} menüsü`}><div className="flyout-heading"><span className={`flyout-group-icon ${getGroupColor(SERVICES.find((service) => nodeContainsService(flyoutNode, service.id))?.group ?? "İzleme")}`}><flyoutNode.icon size={20} /></span><div><small>ÇALIŞMA ALANI</small><h2>{flyoutNode.label}</h2></div><IconButton label="Menüyü kapat" onClick={() => setFlyoutId(null)}><X size={16} /></IconButton></div><div className="flyout-tree">{flyoutNode.children?.map((child) => <SidebarTreeItem key={child.id} node={child} level={0} activeId={activeId} expandedNodes={expandedNodes} toggleNode={toggleNode} openService={openService} />)}</div><button className="flyout-directory" onClick={() => openCatalog()}><Grid2X2 size={16} /> Tüm modülleri görüntüle <ChevronRight size={15} /></button></section> : null}
-    </aside>
-    <button className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />
-
+    <NavigationShell nodes={SIDEBAR_TREE} activeId={activeId} activeRootId={activeRootId} flyoutId={flyoutId} flyoutNode={flyoutNode} flyoutTone={getGroupColor(SERVICES.find((service) => flyoutNode && nodeContainsService(flyoutNode, service.id))?.group ?? "İzleme")} expandedNodes={expandedNodes} onFlyout={setFlyoutId} onToggleNode={toggleNode} onOpenService={openService} onOpenCatalog={() => openCatalog()} onCloseMobile={() => setMobileMenuOpen(false)} />
     <main className="app-shell">
-      <header className="topbar"><IconButton label="Mobil menü" onClick={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }}><Menu size={19} /></IconButton><button className="global-search" onClick={() => setPaletteOpen(true)}><Search size={18} /><span>Sayfa, kişi, cihaz veya rapor ara…</span><kbd>⌘ K</kbd></button><div className="top-actions"><StatusPill tone="success">Bağlantı aktif</StatusPill><IconButton label="Bildirimler"><Bell size={19} /><span className="notification-dot">3</span></IconButton><IconButton label={theme === "light" ? "Koyu moda geç" : "Açık moda geç"} onClick={() => setTheme((value) => value === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={19} /> : <Sun size={19} />}</IconButton><div className="top-user"><span className="avatar">AS</span><span><strong>Admin</strong><small>{WORKSPACE_NAME}</small></span></div></div></header>
-      <div className="workspace-tabs" role="tablist" aria-label="Açık çalışma sekmeleri">{orderedTabs.map((id) => { const TabIcon = getIcon(id); const pinned = pinnedTabIds.includes(id); return <div className={`workspace-tab ${activeId === id ? "active" : ""} ${pinned ? "pinned" : ""}`} key={id}><button className="tab-main" role="tab" aria-selected={activeId === id} onClick={() => setActiveId(id)}><TabIcon size={15} /><span>{getLabel(id)}</span></button>{id !== "home" ? <><button className="tab-pin" aria-label={pinned ? `${getLabel(id)} sekmesinin sabitlemesini kaldır` : `${getLabel(id)} sekmesini sabitle`} aria-pressed={pinned} title={pinned ? "Sabitlemeyi kaldır" : "Sekmeyi sabitle"} onClick={() => toggleTabPin(id)}><Pin size={12} /></button><button className="tab-close" aria-label={`${getLabel(id)} sekmesini kapat`} onClick={() => closeTab(id)}><X size={13} /></button></> : null}</div>; })}<button className="new-tab" aria-label="Modül dizinini aç" onClick={() => openCatalog()}><Plus size={15} /></button></div>
+      <AndonSpine openService={openService} />
+      <TopBar theme={theme} workspaceName={WORKSPACE_NAME} onMobileMenu={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }} onSearch={() => setPaletteOpen(true)} onScope={() => notify("Konum kapsamı açıldı")} onCritical={() => openService("alarms-management")} onTheme={() => setTheme((value) => value === "light" ? "dark" : "light")} />
+      <WorkspaceTabs items={workspaceTabItems} onOpen={setActiveId} onPin={toggleTabPin} onClose={closeTab} onNew={() => openCatalog()} />
       <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeId === "marketplace" ? <MarketplaceView onOpenService={openService} onNotice={notify} /> : activeService ? <ServiceView service={activeService} onColumns={() => setActionDialog({ mode: "columns", label: "Sütunlar", serviceId: activeService.id })} onExport={() => exportTable(activeService)} onNotice={notify} /> : null}</div>
     </main>
     {paletteOpen ? <CommandPalette close={() => setPaletteOpen(false)} openService={openService} openCatalog={() => openCatalog()} /> : null}
     {actionDialog ? <ActionDialog state={actionDialog} close={() => setActionDialog(null)} confirm={(message) => { setActionDialog(null); notify(message); }} /> : null}
-    {toast ? <div className="app-toast" role="status"><CheckCircle2 size={17} />{toast}</div> : null}
+    <AppToast message={toast} />
   </div>;
 }

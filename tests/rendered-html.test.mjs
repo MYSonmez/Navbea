@@ -67,19 +67,28 @@ test("standard Next.js server renders the Navbea application", async () => {
 });
 
 test("contains the complete service tree and no Vinext runtime", async () => {
-  const [app, css, layout, packageSource, nextEnv, dataTable, sharedUi, sidebarTree, mapManagement, dashboardManagement, timeDistribution, marketplace, favicon] = await Promise.all([
+  const [app, css, layout, packageSource, nextEnv, dataTable, tableDialogs, rowActions, tablePagination, tableToolbar, sortIndicator, sharedUi, pageHeader, sidebarTree, navigationShell, workspaceTabs, mapManagement, dashboardManagement, timeDistribution, marketplace, reportViews, favicon] = await Promise.all([
     readFile(new URL("../app/NavbeaApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../next-env.d.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/DataTable.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/data-table/TableDialogs.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/data-table/RowActions.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/data-table/TablePagination.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/data-table/TableToolbar.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/data-table/SortIndicator.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/Ui.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/ui/PageHeader.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/SidebarTree.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/shell/NavigationShell.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/shell/WorkspaceTabs.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/MapManagementView.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/DashboardManagementView.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/TimeDistributionViews.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/navbea/MarketplaceView.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/navbea/ReportViews.tsx", import.meta.url), "utf8"),
     readFile(new URL("../public/favicon.svg", import.meta.url), "utf8"),
   ]);
 
@@ -89,6 +98,8 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   const sidebarIds = [...treeBlock.matchAll(/serviceId: "([^"]+)"/g)].map((match) => match[1]);
   const reachableIds = new Set([...sidebarIds, "wizard"]);
   const packageJson = JSON.parse(packageSource);
+  const shellSource = `${app}\n${navigationShell}\n${workspaceTabs}`;
+  const tableSource = `${dataTable}\n${tableDialogs}\n${rowActions}\n${tablePagination}\n${tableToolbar}\n${sortIndicator}`;
 
   assert.equal(serviceIds.length, 68);
   assert.deepEqual(serviceIds.filter((id) => !reachableIds.has(id)), []);
@@ -102,10 +113,10 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.equal(packageJson.devDependencies?.vite, undefined);
   assert.doesNotMatch(nextEnv, /vinext/i);
   assert.match(app, /className="command-popover"/);
-  assert.match(app, /className="navigation-shell"/);
-  assert.match(app, /SIK KULLANILANLAR/);
+  assert.match(shellSource, /className="navigation-shell"/);
+  assert.match(shellSource, /SIK KULLANILANLAR/);
   assert.match(app, /navbea:pinned-tabs/);
-  assert.match(app, /className="tab-pin"/);
+  assert.match(shellSource, /className="tab-pin"/);
   assert.match(app, /MAX_WORKSPACE_TABS/);
   assert.match(app, /!pinnedTabIds\.includes\(candidate\)/);
   assert.match(app, /setTabs\(\(current\) => \["home", \.\.\.validPins/);
@@ -117,21 +128,23 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(app, /getTableModel/);
   assert.match(css, /\.nav-flyout/);
   assert.match(css, /\.donut\.health-distribution/);
-  assert.match(layout, /GeistSans/);
-  assert.match(layout, /GeistMono/);
+  assert.match(layout, /@fontsource-variable\/ibm-plex-sans/);
+  assert.match(layout, /@fontsource\/ibm-plex-mono/);
   assert.match(layout, /favicon\.svg\?v=2/);
-  assert.equal(packageJson.dependencies.geist.startsWith("^"), true);
+  assert.equal(packageJson.dependencies["@fontsource-variable/ibm-plex-sans"].startsWith("^"), true);
+  assert.equal(packageJson.dependencies["@fontsource/ibm-plex-mono"].startsWith("^"), true);
   assert.match(app, /components\/navbea\/DataTable/);
   assert.doesNotMatch(app, /\*{3,}\d{3}/);
-  assert.match(dataTable, /direction: "desc"/);
-  assert.match(dataTable, /direction: "asc"/);
-  assert.match(dataTable, /return null;/);
-  assert.match(dataTable, /> Düzenle</);
-  assert.match(dataTable, /> Sil</);
+  assert.match(tableSource, /direction: "desc"/);
+  assert.match(tableSource, /direction: "asc"/);
+  assert.match(tableSource, /return null;/);
+  assert.match(tableSource, /> Düzenle</);
+  assert.match(tableSource, /> Sil</);
   assert.match(dataTable, /setRows/);
-  assert.match(dataTable, /Tablo sayfaları/);
+  assert.match(tableSource, /Tablo sayfaları/);
   assert.match(dataTable, /const isIdentifier/);
-  assert.match(sharedUi, /export function SectionHeader/);
+  assert.match(sharedUi, /export \{ PageHeader, SectionHeader \}/);
+  assert.match(pageHeader, /export function PageHeader/);
   assert.match(sidebarTree, /export function SidebarTreeItem/);
   assert.match(mapManagement, /Harita Yönetimi/);
   assert.match(mapManagement, /Konum Ekle/);
@@ -156,12 +169,29 @@ test("contains the complete service tree and no Vinext runtime", async () => {
   assert.match(timeDistribution, /Onaya gönder/);
   assert.match(timeDistribution, /undoLastAssignment/);
   assert.match(app, /activeId === "marketplace"/);
-  assert.match(app, /rail-marketplace/);
+  assert.match(shellSource, /rail-marketplace/);
   assert.match(marketplace, /Akıllı Alan Kullanımı/);
   assert.match(marketplace, /Acil Durum ve Toplanma/);
   assert.match(marketplace, /Ekipman ve El Aleti Takibi/);
-  assert.match(marketplace, /Hijyen ve Sarf Doluluk Takibi/);
+  assert.match(marketplace, /Hijyen ve Sarf Takibi/);
   assert.match(marketplace, /Mesai ve Görev Süresi Uyumu/);
+  assert.match(app, /components\/navbea\/ReportViews/);
+  for (const reportId of ["report-alarms", "report-personnels", "report-visitors", "report-equipment", "report-equipment-usage", "report-area", "report-floor", "report-tags", "report-gps", "report-pir", "report-sensors", "report-heatmap", "report-dynamic", "report-entrances", "attendance-daily", "attendance-monthly"]) {
+    assert.match(reportViews, new RegExp(reportId));
+  }
+  assert.match(reportViews, /Geçiş Kontrol Raporları/);
+  assert.match(reportViews, /Bölge Etiketlerine Göre Geçirilen Zaman/);
+  assert.match(reportViews, /Hareketsiz Personel \(Kart Kullanmayan\)/);
+  assert.match(reportViews, /Kapatma Açıklaması/);
+  assert.match(reportViews, /Rotayı Aç/);
+  assert.match(reportViews, /Sonuçlar güncellendi/);
+  assert.match(reportViews, /Kayıt bulunamadı/);
+  assert.match(reportViews, /CSV olarak indirildi/);
+  assert.match(reportViews, /Haritayı yakınlaştır/);
+  assert.match(reportViews, /Kartı kaldır/);
+  assert.match(reportViews, /Sıcaklık \(°C\)/);
+  assert.match(reportViews, /HAREKET TAKVİMİ/);
+  assert.match(reportViews, /Dashboard Ekle/);
   assert.match(favicon, /#315FDF/);
   assert.match(css, /input:focus-visible/);
 });

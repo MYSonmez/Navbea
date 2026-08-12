@@ -23,11 +23,9 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
-  ChevronDown,
   CircleDot,
   Clock3,
   Download,
-  Filter,
   Focus,
   Gauge,
   Layers3,
@@ -50,6 +48,10 @@ import {
   WifiOff,
   Wrench,
 } from "lucide-react";
+import { MonitoringHeader } from "../components/navbea/monitoring/MonitoringHeader";
+import { MonitoringFilter as FilterPopover } from "../components/navbea/monitoring/MonitoringFilter";
+import { MonitoringMetric as MetricCard, SimpleBars, type MonitoringTone as Tone } from "../components/navbea/monitoring/MonitoringMetric";
+import { ViewSwitch } from "../components/navbea/monitoring/ViewSwitch";
 
 const MonitoringMap = dynamic(() => import("./MonitoringMap"), {
   ssr: false,
@@ -57,7 +59,6 @@ const MonitoringMap = dynamic(() => import("./MonitoringMap"), {
 });
 
 type MonitoringId = "live" | "emergency" | "summary" | "alarm-dashboard" | "active-tasks";
-type Tone = "blue" | "teal" | "amber" | "coral" | "violet" | "slate";
 
 const chartTooltip = {
   borderRadius: 12,
@@ -136,46 +137,6 @@ const initialTasks = [
   { id: "TSK-123", title: "Misafir kartlarını teslim al", owner: "Atanmamış", team: "Operasyon", location: "Ana Giriş", due: "18:00", priority: "Orta", status: "Atanmamış", progress: 0 },
   { id: "TSK-122", title: "Gateway bağlantısını doğrula", owner: "Cemal Yıldız", team: "Teknik", location: "B Blok", due: "Yarın 10:00", priority: "Düşük", status: "Planlandı", progress: 0 },
 ];
-
-function MonitoringHeader({ title, eyebrow, status, children }: { title: string; eyebrow: string; status?: string; children?: React.ReactNode }) {
-  return (
-    <header className="monitor-page-header">
-      <div><p className="eyebrow">{eyebrow}</p><div className="monitor-title-line"><h1>{title}</h1>{status ? <span className="monitor-live-pill"><span />{status}</span> : null}</div><small>Son veri 15:42:18</small></div>
-      <div className="monitor-header-actions">{children}</div>
-    </header>
-  );
-}
-
-function FilterPopover({ kind = "general" }: { kind?: "general" | "alarm" | "tasks" }) {
-  const [open, setOpen] = useState(false);
-  const [applied, setApplied] = useState(false);
-  return (
-    <div className="monitor-filter-wrap">
-      <button className={`monitor-button ${applied ? "is-active" : ""}`} onClick={() => setOpen((value) => !value)} aria-expanded={open}><Filter size={16} /> Filtrele <ChevronDown size={14} /></button>
-      {open ? <div className="monitor-filter-popover">
-        <label><span>Konum</span><select><option>Tüm konumlar</option><option>Merkez Kampüs</option><option>Teknopol</option></select></label>
-        {kind === "alarm" ? <label><span>Öncelik</span><select><option>Tüm öncelikler</option><option>Kritik</option><option>Uyarı</option></select></label> : null}
-        {kind === "tasks" ? <label><span>Ekip</span><select><option>Tüm ekipler</option><option>Teknik</option><option>Güvenlik</option><option>İSG</option></select></label> : null}
-        <label><span>Zaman</span><select><option>Şu an</option><option>Son 24 saat</option><option>Son 7 gün</option></select></label>
-        <div><button className="monitor-button" onClick={() => { setApplied(false); setOpen(false); }}>Temizle</button><button className="monitor-button primary" onClick={() => { setApplied(true); setOpen(false); }}>Uygula</button></div>
-      </div> : null}
-    </div>
-  );
-}
-
-function MetricCard({ label, value, detail, icon: Icon, tone = "blue", onClick, active }: { label: string; value: string; detail: string; icon: typeof Activity; tone?: Tone; onClick?: () => void; active?: boolean }) {
-  const content = <><span className={`monitor-metric-icon ${tone}`}><Icon size={19} /></span><span><small>{label}</small><strong>{value}</strong><em>{detail}</em></span></>;
-  return onClick ? <button className={`monitor-metric-card ${active ? "active" : ""}`} onClick={onClick}>{content}</button> : <article className="monitor-metric-card">{content}</article>;
-}
-
-function ViewSwitch({ value, setValue, options }: { value: string; setValue: (value: string) => void; options: { id: string; label: string; icon?: typeof List }[] }) {
-  return <div className="monitor-view-switch">{options.map(({ id, label, icon: Icon }) => <button key={id} className={value === id ? "active" : ""} onClick={() => setValue(id)}>{Icon ? <Icon size={15} /> : null}{label}</button>)}</div>;
-}
-
-function SimpleBars({ items, tone = "blue" }: { items: { name: string; value: number }[]; tone?: Tone }) {
-  const max = Math.max(...items.map((item) => item.value), 1);
-  return <div className="monitor-simple-bars">{items.map((item) => <div key={item.name}><span><strong>{item.name}</strong><em>{item.value}</em></span><i><b className={tone} style={{ width: `${item.value / max * 100}%` }} /></i></div>)}</div>;
-}
 
 function LiveMonitoringView() {
   const [kind, setKind] = useState("Tümü");

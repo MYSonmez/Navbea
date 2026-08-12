@@ -1,0 +1,3 @@
+export function AndonSpine({ openService }: { openService: (id: string) => void }) {
+  return <aside className="andon-spine" aria-label="Operasyon durum özeti"><button className="andon-segment live" type="button" onClick={() => openService("live")} aria-label="Canlı izleme: 2.386 varlık çevrimiçi"><span>2.386 çevrimiçi</span></button><button className="andon-segment watch" type="button" onClick={() => openService("alarm-dashboard")} aria-label="İncelenecek 8 uyarı"><span>8 uyarı</span></button><button className="andon-segment critical" type="button" onClick={() => openService("alarms-management")} aria-label="Müdahale gereken 3 kritik alarm"><span>3 kritik alarm</span></button></aside>;
+}
