@@ -3642,3 +3642,152 @@ textarea:focus-visible,
   .ui-button,
   .ui-search-field { transition: none; }
 }
+
+/* Final interface alignment ------------------------------------------------
+   Keeps navigation, type and controls on one shared scale in both themes. */
+.navbea-app {
+  --sidebar-bg: #e4eaef;
+  --sidebar-panel: #f1f5f7;
+  --sidebar-line: #cbd6de;
+  --sidebar-text: #536779;
+  --sidebar-strong: #152535;
+  --sidebar-hover: rgba(36, 95, 223, .08);
+  --sidebar-active: #245fdf;
+  --type-title-lg: 26px;
+}
+
+.navbea-app[data-theme="dark"] {
+  --sidebar-bg: #0a1620;
+  --sidebar-panel: #12212d;
+  --sidebar-line: #293b48;
+  --sidebar-text: #91a4b2;
+  --sidebar-strong: #eef4f7;
+  --sidebar-hover: rgba(255, 255, 255, .065);
+  --sidebar-active: #356fe7;
+}
+
+.sidebar,
+.navbea-app[data-theme="dark"] .sidebar {
+  color: var(--sidebar-strong);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-line);
+}
+.brand-logo-light { display: block; }
+.brand-logo-dark { display: none; }
+.navbea-app[data-theme="dark"] .brand-logo-light { display: none; }
+.navbea-app[data-theme="dark"] .brand-logo-dark { display: block; }
+.rail-tooltip {
+  color: var(--sidebar-strong);
+  background: var(--sidebar-panel);
+  border-color: var(--sidebar-line);
+}
+.rail-link.active {
+  color: #fff;
+  background: var(--sidebar-active);
+  box-shadow: none;
+}
+.rail-avatar {
+  border: 1px solid var(--sidebar-line);
+  color: var(--sidebar-strong);
+  background: var(--sidebar-panel);
+}
+
+/* Avoid clipped descenders such as ğ, ş and y in compact navigation rows. */
+.navbea-app button { line-height: 1.25; }
+.navbea-app button > svg { flex: 0 0 auto; }
+.nav-tree-link,
+.nav-tree-toggle,
+.flyout-directory,
+.rail-tooltip {
+  line-height: 1.35;
+}
+.nav-tree-link > span,
+.nav-tree-toggle > span {
+  padding-block: 2px;
+  color: inherit;
+  font-size: var(--type-control);
+  line-height: 1.35;
+}
+.flyout-tree .nav-tree-link,
+.flyout-tree .nav-tree-toggle { min-height: 40px; padding-block: 5px; }
+.flyout-tree .nav-tree-link.level-1,
+.flyout-tree .nav-tree-node.level-1 > .nav-tree-toggle,
+.flyout-tree .nav-tree-link.level-2,
+.flyout-tree .nav-tree-node.level-2 > .nav-tree-toggle { min-height: 38px; }
+.flyout-tree .nav-tree-link.level-1 > span,
+.flyout-tree .nav-tree-node.level-1 > .nav-tree-toggle > span,
+.flyout-tree .nav-tree-link.level-2 > span,
+.flyout-tree .nav-tree-node.level-2 > .nav-tree-toggle > span { font-size: var(--type-caption); }
+
+/* Normalize legacy micro-text utilities without changing information density. */
+.navbea-app .text-\[7px\],
+.navbea-app .text-\[8px\],
+.navbea-app .text-\[9px\],
+.navbea-app .text-\[9\.5px\],
+.navbea-app .text-\[10px\],
+.navbea-app .text-\[10\.5px\] { font-size: var(--type-caption) !important; line-height: 1.35 !important; }
+.navbea-app .text-\[11px\],
+.navbea-app .text-\[11\.5px\] { font-size: var(--type-control) !important; line-height: 1.4 !important; }
+.section-description,
+.marketplace-heading p,
+.monitor-page-header > div:first-child > small { max-width: 72ch; }
+.panel p,
+.ui-dialog p,
+.monitor-page p { line-height: 1.5; }
+
+/* Equivalent controls share vertical centering and usable hit targets. */
+.ui-button,
+.primary-button,
+.secondary-button,
+.text-button,
+.monitor-button,
+.monitor-icon-button,
+.monitor-row-action,
+.marketplace-primary,
+.marketplace-ghost,
+.marketplace-open-button,
+.marketplace-install-button,
+.scope-chip,
+.critical-queue,
+.flyout-directory,
+.status-pill,
+.monitor-status,
+.monitor-soft-badge,
+.soft-tag,
+.monitor-live-pill {
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+  text-align: center;
+}
+.icon-button,
+.monitor-icon-button,
+.tab-pin,
+.tab-close,
+.new-tab { display: inline-grid; place-items: center; padding: 0; }
+.status-pill,
+.monitor-status,
+.monitor-soft-badge,
+.soft-tag,
+.monitor-live-pill { display: inline-flex; }
+.scope-chip,
+.critical-queue { height: var(--control-md); min-height: var(--control-md); font-size: var(--type-control); }
+.notification-dot { line-height: 1; }
+.top-user {
+  min-height: var(--control-md);
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.top-user:hover strong { color: var(--blue); }
+
+/* The removed Andon rail must not reserve visual or interaction space. */
+.andon-spine { display: none !important; }
+
+@media (max-width: 760px) {
+  .navbea-app { --type-title-lg: 24px; }
+}

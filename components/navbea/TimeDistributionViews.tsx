@@ -15,7 +15,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { DataTable, type TableModel } from "./DataTable";
 import { SectionHeader } from "./Ui";
 
@@ -115,7 +115,9 @@ function SelectField({ label, options = ["Hepsi"] }: { label: string; options?: 
 }
 
 function ReportFilterPanel() {
-  return <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-[var(--ring)]">
+  const formRef = useRef<HTMLFormElement>(null);
+  const [result, setResult] = useState("");
+  return <form ref={formRef} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-raised)] p-4 shadow-[var(--ring)]" onSubmit={(event) => { event.preventDefault(); setResult("Filtreler uygulandı · 24 kayıt bulundu."); }}>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <SelectField label="Konum" options={["Tümü", "Merkez Kampüs", "Ana Bina"]} />
       <SelectField label="Bölge" options={["Tümü", "A Blok", "B Blok"]} />
@@ -126,8 +128,8 @@ function ReportFilterPanel() {
       <SelectField label="Disiplin" />
       <FilterField label="Tarih Aralığı"><input defaultValue="05.08.2026 00:00 – 05.08.2026 23:59" className="h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-xs text-[var(--text)] outline-none transition focus:border-[var(--blue)]" /></FilterField>
     </div>
-    <div className="mt-4 flex justify-end gap-2"><button type="button" className="secondary-button"><RotateCcw size={15} /> Sıfırla</button><button type="button" className="primary-button"><Search size={15} /> Filtrele</button></div>
-  </section>;
+    <div className="mt-4 flex flex-wrap items-center justify-end gap-2">{result ? <span className="mr-auto text-[11px] font-medium text-emerald-700 dark:text-emerald-300" role="status">{result}</span> : null}<button type="button" className="secondary-button" onClick={() => { formRef.current?.reset(); setResult("Filtreler sıfırlandı."); }}><RotateCcw size={15} /> Sıfırla</button><button type="submit" className="primary-button"><Search size={15} /> Filtrele</button></div>
+  </form>;
 }
 
 function MatchingFilters({ advancedOpen, onAdvancedChange, onNotice }: { advancedOpen: boolean; onAdvancedChange: () => void; onNotice: (message: string) => void }) {

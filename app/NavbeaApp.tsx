@@ -10,7 +10,6 @@ import { DashboardManagementView } from "../components/navbea/DashboardManagemen
 import { TimeApprovalView, TimeMatchingView, TimeReportView } from "../components/navbea/TimeDistributionViews";
 import { MarketplaceView } from "../components/navbea/MarketplaceView";
 import { NavbeaReportView } from "../components/navbea/ReportViews";
-import { AndonSpine } from "../components/navbea/shell/AndonSpine";
 import { AppToast } from "../components/navbea/shell/AppToast";
 import { NavigationShell } from "../components/navbea/shell/NavigationShell";
 import { TopBar } from "../components/navbea/shell/TopBar";
@@ -1307,7 +1306,7 @@ export function NavbeaApp() {
     } else if (/^(Dışa aktar|İndir)$/.test(label)) {
       event.stopPropagation();
       exportTable();
-    } else if (/^(Yenile|Uygula|Yayınla|Önizle|Adımı test et|Veriyi önizle|Tamamlananları görüntüle|Yoklama raporu oluştur|.* alanını incele|Taslaklar)$/.test(label)) {
+    } else if (/^(Yenile|Veriyi yenile|Liste ayarları|RSSI Testi|Ayarlar|Uygula|Yayınla|Önizle|Adımı test et|Veriyi önizle|Tamamlananları görüntüle|Yoklama raporu oluştur|.* alanını incele|Taslaklar)$/.test(label)) {
       notify(`${label} işlemi tamamlandı`);
     } else if (/^(Satır seçenekleri|Seçenekler|Yakınlaştır|Katmanlar|Bildirimler|Hesap ayarları)$/.test(label)) {
       notify(`${label} açıldı`);
@@ -1315,10 +1314,9 @@ export function NavbeaApp() {
   };
 
   return <div className="navbea-app" data-theme={theme} data-mobile-nav={mobileMenuOpen ? "open" : "closed"} onClickCapture={handleAppAction}>
-    <NavigationShell nodes={SIDEBAR_TREE} activeId={activeId} activeRootId={activeRootId} flyoutId={flyoutId} flyoutNode={flyoutNode} flyoutTone={getGroupColor(SERVICES.find((service) => flyoutNode && nodeContainsService(flyoutNode, service.id))?.group ?? "İzleme")} expandedNodes={expandedNodes} onFlyout={setFlyoutId} onToggleNode={toggleNode} onOpenService={openService} onOpenCatalog={() => openCatalog()} onCloseMobile={() => setMobileMenuOpen(false)} />
+    <NavigationShell nodes={SIDEBAR_TREE} activeId={activeId} activeRootId={activeRootId} flyoutId={flyoutId} flyoutNode={flyoutNode} flyoutTone={getGroupColor(SERVICES.find((service) => flyoutNode && nodeContainsService(flyoutNode, service.id))?.group ?? "İzleme")} expandedNodes={expandedNodes} onFlyout={setFlyoutId} onToggleNode={toggleNode} onOpenService={openService} onOpenCatalog={() => openCatalog()} onProfile={() => notify("Hesap ayarları açıldı")} onCloseMobile={() => setMobileMenuOpen(false)} />
     <main className="app-shell">
-      <AndonSpine openService={openService} />
-      <TopBar theme={theme} workspaceName={WORKSPACE_NAME} onMobileMenu={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }} onSearch={() => setPaletteOpen(true)} onScope={() => notify("Konum kapsamı açıldı")} onCritical={() => openService("alarms-management")} onTheme={() => setTheme((value) => value === "light" ? "dark" : "light")} />
+      <TopBar theme={theme} workspaceName={WORKSPACE_NAME} onMobileMenu={() => { setMobileMenuOpen(true); setFlyoutId(activeRootId ?? "monitoring"); }} onSearch={() => setPaletteOpen(true)} onScope={() => setActionDialog({ mode: "filter", label: "Çalışma alanı", serviceId: activeId })} onCritical={() => openService("alarms-management")} onNotifications={() => openService("alarm-dashboard")} onProfile={() => notify("Hesap ayarları açıldı")} onTheme={() => setTheme((value) => value === "light" ? "dark" : "light")} />
       <WorkspaceTabs items={workspaceTabItems} onOpen={setActiveId} onPin={toggleTabPin} onClose={closeTab} onNew={() => openCatalog()} />
       <div className="content-area">{activeId === "home" ? <HomeView openService={openService} openCatalog={openCatalog} recentIds={recentIds} /> : activeId === "catalog" ? <CatalogView activeGroup={catalogGroup} setActiveGroup={setCatalogGroup} openService={openService} /> : activeId === "marketplace" ? <MarketplaceView onOpenService={openService} onNotice={notify} /> : activeService ? <ServiceView service={activeService} onColumns={() => setActionDialog({ mode: "columns", label: "Sütunlar", serviceId: activeService.id })} onExport={() => exportTable(activeService)} onNotice={notify} /> : null}</div>
     </main>
